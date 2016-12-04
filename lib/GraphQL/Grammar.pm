@@ -9,7 +9,7 @@ token Ignored
 
 token UnicodeBOM { \x[FEFF] }
 
-token WhiteSpace { [ \x[0009] | \x[0020] ] }
+token WhiteSpace { \x[0009] | \x[0020] }
 
 token LineTerminator
 { [ \x[000A] | \x[000D]<!before \x[000A]> | \x[000D]\x[000A] ]}
@@ -24,10 +24,10 @@ token Comma { ',' }
 
 token Name { <[_A..Za..z]><[_0..9A..Za..z]>* }
 
-token IntValue { <IntegerPart> }
+token IntValue { <.IntegerPart> }
 
 token IntegerPart
-{ [ <NegativeSign>? 0 | <NegativeSign>? <NonZeroDigit> <Digit>* ] }
+{ [ <.NegativeSign>? 0 | <.NegativeSign>? <.NonZeroDigit> <.Digit>* ] }
 
 token NegativeSign { '-' }
 
@@ -38,29 +38,29 @@ token NonZeroDigit { <[1..9]>}
 token FloatValue
 { 
   [
-    <IntegerPart> <FractionalPart> |
-    <IntegerPart> <ExponentPart>   |
-    <IntegerPart> <FractionalPart> <ExponentPart>
+    <.IntegerPart> <.FractionalPart> |
+    <.IntegerPart> <.ExponentPart>   |
+    <.IntegerPart> <.FractionalPart> <.ExponentPart>
   ]
 }
 
-token FractionalPart { '.' <Digit>+ }
+token FractionalPart { '.' <.Digit>+ }
 
-token ExponentPart { <ExponentIndicator> <Sign>? <Digit>+ }
+token ExponentPart { <.ExponentIndicator> <.Sign>? <.Digit>+ }
 
 token ExponentIndicator { [ 'e' | 'E' ] }
 
 token Sign { [ '+' | '-' ] }
 
-token StringValue { '"' <StringCharacter>* '"' }
+token StringValue { '"' <InsideString> '"' }
+
+token InsideString { <.StringCharacter>* }
 
 token StringCharacter
 {
-  [
    <[\x[0009]\x[000A]\x[000D]\x[0020]..\x[FFFF]]-[\"\\\r\n]> | 
    '\u' <EscapedUnicode> | 
    \\ <EscapedCharacter>
-  ]
 }
 
 token EscapedUnicode { <[0..9A..Fa..f]> ** 4 }
@@ -73,20 +73,19 @@ token ws { <.Ignored>* }
 
 rule Document { <.ws> <Definition>+ }
 
-rule Definition { [ <OperationDefinition> | <FragmentDefinition> ] }
+rule Definition { <OperationDefinition> | <FragmentDefinition> }
 
 rule OperationDefinition
 {
-  [ <SelectionSet> |
+    <SelectionSet> |
     <OperationType> <Name>? <VariableDefinitions>? <Directives>? <SelectionSet>
-  ]
 }
 
-token OperationType { [ 'query' | 'mutation' ] }
+token OperationType { 'query' | 'mutation' }
 
 rule SelectionSet { '{' <Selection>+ '}' }
 
-rule Selection { [ <Field> | <FragmentSpread> | <InlineFragment> ] }
+rule Selection { <Field> | <FragmentSpread> | <InlineFragment> }
 
 rule Field { <Alias>? <Name> <Arguments>? <Directives>? <SelectionSet>? }
 
@@ -134,13 +133,13 @@ rule Variable { '$' <Name> }
 
 rule DefaultValue { '=' <Value> }
 
-rule Type { [ <NonNullType> | <NamedType> | <ListType> ] }
+rule Type { <NonNullType> | <NamedType> | <ListType> }
 
 rule NamedType { <Name> }
 
 rule ListType { '[' <Type> ']' }
 
-rule NonNullType { [ <NamedType> '!' | <ListType> '!' ] }
+rule NonNullType { <NamedType> '!' | <ListType> '!' }
 
 rule Directives { <Directive>+ % <.ws> }
 
@@ -152,13 +151,13 @@ rule Directive { '@' <Name> <Arguments>? }
 
 rule TypeSchema { <.ws> <TypeDefinition>+ }
 
-rule TypeDefinition { [ <InterfaceDefinition>  | 
-			<ScalarDefinition>     |
-			<ObjectTypeDefinition> | 
-			<UnionDefinition>      |
-			<EnumDefinition>       | 
-			<InputDefinition>      |
-			<SchemaDefinition> ] }
+rule TypeDefinition { <InterfaceDefinition>  |
+                      <ScalarDefinition>     |
+                      <ObjectTypeDefinition> |
+                      <UnionDefinition>      |
+                      <EnumDefinition>       |
+                      <InputDefinition>      |
+                      <SchemaDefinition> }
 
 rule InterfaceDefinition { 'interface' <Name> <FieldDefinitionList> }
 

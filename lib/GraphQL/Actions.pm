@@ -140,14 +140,19 @@ method Value:sym<IntValue>($/)
     make $/.Int;
 }
 
+method StringValue($/)
+{
+    make $<InsideString>.Str;
+}
+
 method Value:sym<StringValue>($/)
 {
-    make $/.Str;
+    make $<StringValue>.made;
 }
 
 method Value:sym<BooleanValue>($/)
 {
-    make $/.Str;
+    make $/.Str eq 'true' ?? True !! False;
 }
 
 method Value:sym<NullValue>($/)
@@ -205,10 +210,12 @@ method InterfaceDefinition($/)
 method FieldDefinitionList($/)
 {
     my $fieldlist = GraphQL::FieldList.new;
+
     for $<FieldDefinition> -> $field
     {
         $fieldlist{$field.made.name} = $field.made
     }
+
     make $fieldlist;
 }
 
@@ -228,7 +235,7 @@ method FieldDefinition($/)
         make GraphQL::Field.new(
             name => $<Name>.made,
             type => $<Type>.made,
-            args => $<ArgumentDefinitions>.made // ()
+            args => $<ArgumentDefinitions>.made // (),
         );
     }
 }
@@ -285,21 +292,12 @@ method DefaultValue($/)
 
 method ArgumentDefinition($/)
 {
-    if $<Type>.made ~~ Str
-    {
-        my $t = GraphQL::InputValue.new(name => $<Name>.made,
-                                        defaultValue => $<DefaultValue>.made);
+    my $t = GraphQL::TypeArgument.new(name => $<Name>.made,
+                                      defaultValue => $<DefaultValue>.made);
 
-        push @.fields-to-type, $<Type>.made => $t;
+    push @!fields-to-type, $<Type>.made => $t;
 
-        make $t;
-    }
-    else
-    {
-        make GraphQL::InputValue.new(name => $<Name>.made,
-                                     type => $<Type>.made,
-                                     defaultValue => $<DefaultValue>.made);
-    }
+    make $t;
 }
 
 method ArgumentDefinitions($/)
@@ -325,7 +323,7 @@ method TypeSchema($/)
 
         given $field.value
         {
-            when GraphQL::Field | GraphQL::InputValue
+            when GraphQL::Field | GraphQL::TypeArgument
             {
                 $field.value.type = $!s.types{$field.key}
             }

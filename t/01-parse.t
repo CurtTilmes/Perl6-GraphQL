@@ -1,7 +1,9 @@
 use v6;
 
-use GraphQL::Grammar;
 use Test;
+use lib 'lib';
+
+use GraphQL::Grammar;
 
 # Every example from http://facebook.github.io/graphql
 

@@ -77,21 +77,22 @@ class GraphQL::Object is GraphQL::Type
     }
 }
 
-class GraphQL::InputValue is GraphQL::Object
+class GraphQL::TypeArgument is GraphQL::Type
 {
     has GraphQL::Type $.type is rw;
     has $.defaultValue;
 
     method Str
     {
-        "$.name: $.type.name()" ~ (" = $.defaultValue" if $.defaultValue)
+        "$.name: $.type.name()" ~ (" = $.defaultValue"
+                                       if $.defaultValue.defined)
     }
 }
 
 class GraphQL::Field is GraphQL::Type
 {
     has GraphQL::Type $.type is rw;
-    has GraphQL::InputValue @.args is rw;
+    has GraphQL::TypeArgument @.args is rw;
     has Bool $.isDeprecated = False;
     has Str $.deprecationReason;
     has Callable $.resolver is rw;
@@ -161,7 +162,7 @@ enum GraphQL::DirectiveLocation<QUERY MUTATION FIELD FRAGMENT_DEFINITION
 class GraphQL::Directive is GraphQL::Type
 {
     has GraphQL::DirectiveLocation @.locations;
-    has GraphQL::InputValue @.args;
+    has GraphQL::TypeArgument @.args;
 }
 
 #
