@@ -2,8 +2,17 @@ unit module Hash::Ordered;
 
 class Hash::Ordered does Associative
 {
-    has %!hash handles <AT-KEY EXISTS-KEY elems gist>;
-    has @!keys;
+    has %!hash handles <AT-KEY EXISTS-KEY elems gist perl>;
+    has @!keys = ();
+
+    method new(*%args) {
+        my $h = self.bless;
+        for %args.kv -> $k, $v
+        {
+            $h.ASSIGN-KEY($k, $v);
+        }
+        return $h;
+    }
 
     method ASSIGN-KEY($key, $new)
     {

@@ -57,10 +57,13 @@ class GraphQL::Non-Null is GraphQL::Type
     method Str  { $!ofType.Str  ~ '!' }
 }
 
+# Because the GraphQL spec stupidly defines these to be ordered..
+class GraphQL::FieldList is Hash::Ordered {}
+
 class GraphQL::Object is GraphQL::Type
 {
     has Str $.kind = 'OBJECT';
-    has Hash::Ordered $.fields;
+    has GraphQL::FieldList $.fields;
     has GraphQL::Type @.interfaces is rw;
 
     method Str
@@ -114,7 +117,7 @@ class GraphQL::Field is GraphQL::Type
 class GraphQL::Interface is GraphQL::Type
 {
     has Str $.kind = 'INTERFACE';
-    has Hash::Ordered $.fields;
+    has GraphQL::FieldList $.fields;
 
     method Str
     {
@@ -179,12 +182,12 @@ my %defaultTypes =
 
     __Schema => GraphQL::Object.new(
         name => '__Schema',
-        fields => Hash::Ordered.new()
+        fields => GraphQL::FieldList.new()
     ),
 
     __Type => GraphQL::Object.new(
         name => '__Type',
-        fields => Hash::Ordered.new()
+        fields => GraphQL::FieldList.new()
     ),
 
     __TypeKind => GraphQL::Enum.new(
@@ -194,17 +197,17 @@ my %defaultTypes =
 
     __Field => GraphQL::Object.new(
         name => '__Field',
-        fields => Hash::Ordered.new()
+        fields => GraphQL::FieldList.new()
     ),
 
     __EnumValue => GraphQL::Object.new(
         name => '__EnumValue',
-        fields => Hash::Ordered.new()
+        fields => GraphQL::FieldList.new()
     ),
 
     __InputValue => GraphQL::Object.new(
         name => '__InputValue',
-        fields => Hash::Ordered.new()
+        fields => GraphQL::FieldList.new()
     ),
     
     __Directive => GraphQL::Directive.new();
@@ -301,12 +304,20 @@ class GraphQL::Document
 
 class GraphQL::Schema
 {
-    has %.types is rw = %defaultTypes;
-    has $.query is rw = 'Query';
+    has %.types;
+    has $.query is rw;
     has $.mutation is rw;
     has $.subscription is rw;
 
     method type($query = $!query) { %!types{$query} }
+
+    method BUILD(:%types, :$query, :$mutation, :$subscription)
+    {
+        %!types = %defaultTypes, %types;
+        $!query = $query // 'Query';
+        $!mutation = $mutation;
+        $!subscription = $subscription;
+    }
 
     method Str
     {

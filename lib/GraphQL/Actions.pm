@@ -204,10 +204,10 @@ method InterfaceDefinition($/)
 
 method FieldDefinitionList($/)
 {
-    my $fieldlist = Hash::Ordered.new;
-    for $<FieldDefinition> -> $f
+    my $fieldlist = GraphQL::FieldList.new;
+    for $<FieldDefinition> -> $field
     {
-        $fieldlist{$f.made.name} = $f.made;
+        $fieldlist{$field.made.name} = $field.made
     }
     make $fieldlist;
 }
