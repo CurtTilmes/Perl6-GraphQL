@@ -5,9 +5,9 @@ class Hash::Ordered does Associative
     has %!hash handles <AT-KEY EXISTS-KEY elems gist perl>;
     has @!keys = ();
 
-    method new(*%args) {
+    method new(*@args) {
         my $h = self.bless;
-        for %args.kv -> $k, $v
+        for @args -> $k, $v
         {
             $h.ASSIGN-KEY($k, $v);
         }

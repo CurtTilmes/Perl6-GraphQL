@@ -41,6 +41,7 @@ method Document($/)
     make $!q;
 }
 
+
 method OperationDefinition($/)
 {
     my $name = $<Name> ?? $<Name>.made !! '';
@@ -67,12 +68,13 @@ method Selection($/)
 method Field($/)
 {
     make GraphQL::QueryField.new(
-        alias        => $<Alias>.made,
-        name         => $<Name>.made,
-        args         => $<Arguments>.made    // (),
-        directives   => $<Directives>.made   // (),
+        alias => $<Alias>.made,
+        name => $<Name>.made,
+        args => $<Arguments>.made // (),
+        directives => $<Directives>.made // (),
         selectionset => $<SelectionSet>.made // ()
     );
+
 }
 
 method Alias($/)
@@ -82,15 +84,12 @@ method Alias($/)
 
 method Arguments($/)
 {
-    make $<Argument>».made;
-}
-
-method Argument($/)
-{
-    make GraphQL::Argument.new(
-        name => $<Name>.made,
-        value => $<Value>.made
-    );
+    my %args;
+    for $<Argument> -> $arg
+    {
+        %args{$arg<Name>.made} = $arg<Value>.made;
+    }
+    make %args;
 }
 
 method FragmentSpread($/)

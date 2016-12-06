@@ -35,7 +35,13 @@ sub ExecuteRequest(GraphQL::Schema :$schema,
 {
     my $operation = $query.GetOperation($operationName);
 
-    # Do something with variables
+    # Make sure schema root field has the introspection types
+    
+    $schema.introspectionfields;
+
+    my %coercedVariableValues = CoerceVariableValues(:$schema,
+                                                     :$operation,
+                                                     :%variableValues);
 
     given $operation.operation
     {
@@ -43,7 +49,7 @@ sub ExecuteRequest(GraphQL::Schema :$schema,
         {
             return ExecuteQuery(:$operation,
                                 :$schema,
-                                :%variableValues,
+                                variableValues => %coercedVariableValues,
                                 :$initialValue);
         }
         when 'mutation'
@@ -51,6 +57,17 @@ sub ExecuteRequest(GraphQL::Schema :$schema,
             say "Mutate!";
         }
     }
+}
+
+sub CoerceVariableValues(GraphQL::Schema :$schema,
+                         GraphQL::Operation :$operation,
+                         :%variableValues)
+{
+    my %coercedValues;
+
+    ...
+
+    return %coercedValues;
 }
 
 sub ExecuteQuery(GraphQL::Operation :$operation,
@@ -61,7 +78,8 @@ sub ExecuteQuery(GraphQL::Operation :$operation,
     my $data = ExecuteSelectionSet(selectionSet => $operation.selectionset,
                                    objectType => $schema.type,
                                    objectValue => $initialValue,
-                                   :%variableValues);
+                                   :%variableValues,
+                                   :$schema);
 
     return {
         data => $data
@@ -72,7 +90,8 @@ sub ExecuteQuery(GraphQL::Operation :$operation,
 sub ExecuteSelectionSet(:@selectionSet,
                         GraphQL::Object :$objectType,
                         :$objectValue,
-                        :%variableValues)
+                        :%variableValues,
+                        :$schema)
 {
     my $groupedFieldSet = CollectFields(:$objectType,
                                         :@selectionSet,
@@ -84,13 +103,23 @@ sub ExecuteSelectionSet(:@selectionSet,
     {
         my $fieldName = @fields[0].name;
 
-        my $fieldType = $objectType.fields{$fieldName}.name or next;
+        my $responseValue;
 
-        my $responseValue = ExecuteField(:$objectType, 
-                                         :$objectValue,
-                                         :@fields,
-                                         :$fieldType,
-                                         :%variableValues);
+        if ($fieldName eq '__typename')  # Maybe I should do this elsewhere?
+        {
+            $responseValue = $objectType.name;
+        }
+        else
+        {
+            my $fieldType = $objectType.fields{$fieldName}.type or next;
+
+            $responseValue = ExecuteField(:$objectType, 
+                                          :$objectValue,
+                                          :@fields,
+                                          :$fieldType,
+                                          :%variableValues,
+                                          :$schema);
+        }
 
         $resultMap{$responseKey} = $responseValue;
     }
@@ -101,37 +130,103 @@ sub ExecuteSelectionSet(:@selectionSet,
 sub ExecuteField(GraphQL::Object :$objectType,
                  :$objectValue,
                  :@fields,
-                 :$fieldType,
-                 :%variableValues)
+                 GraphQL::Type :$fieldType,
+                 :%variableValues,
+                 :$schema)
 {
     my $field = @fields[0];
 
-    my $fieldName = $field.name;
+    my %argumentValues = CoerceArgumentValues(:$objectType,
+                                              :$field,
+                                              :%variableValues);
 
-    my %argumentValues;
-
-    my $resolvedValue = ResolveFieldValue(:$objectType,
-                                          :$objectValue,
-                                          :$fieldName,
-                                          :%argumentValues);
+    my $resolvedValue = $objectType.fields{$field.name}
+                                   .resolve(:$objectValue,
+                                            :%argumentValues,
+                                            :$schema);
 
     return CompleteValue(:$fieldType,
                          :@fields,
-                         :$resolvedValue,
-                         :%variableValues);
+                         :result($resolvedValue),
+                         :%variableValues,
+                         :$schema);
+     
 }
 
-sub ResolveFieldValue(GraphQL::Object :$objectType,
-                      :$objectValue,
-                      :$fieldName,
-                      :%argumentValues)
+sub CompleteValue(GraphQL::Type :$fieldType,
+                  :@fields,
+                  :$result,
+                  :%variableValues,
+                  :$schema)
 {
-    $objectType.fields{$fieldName}.resolve($objectValue, %argumentValues)
+    given $fieldType
+    {
+        when GraphQL::Object | GraphQL::Interface | GraphQL::Union
+        {
+            my $objectType = * ~~ GraphQL::Object 
+                ?? $fieldType
+                !! ResolveAbstractType(:$fieldType, :$result);
+
+            my @subSelectionSet = MergeSelectionSets(:@fields);
+
+            return ExecuteSelectionSet(:selectionSet(@subSelectionSet),
+                                       :$objectType,
+                                       :objectValue($result),
+                                       :%variableValues,
+                                       :$schema);
+        }
+        when GraphQL::Scalar
+        {
+            return $result // Nil;
+        }
+        default 
+        {
+            say $fieldType;
+            die "Complete Value Unknown Type";
+        }
+    }
+
+    return $result;
 }
 
-sub CompleteValue(:$fieldType, :@fields, :$resolvedValue, :%variableValues)
+sub ResolveAbstractType(:$fieldType, :$results)
 {
-    return $resolvedValue;
+    die "ResolveAbstractType";
+}
+
+sub MergeSelectionSets(:@fields)
+{
+    gather
+    {
+        for @fields -> $field
+        {
+            take $_ for $field.selectionset;
+        }
+    }
+}
+
+#
+# $objectType is the schema definition for the object
+# $field is the query field
+#
+sub CoerceArgumentValues(GraphQL::Object :$objectType,
+                         GraphQL::QueryField :$field,
+                         :%variableValues)
+{
+    my %coercedValues;
+
+    for $objectType.fields{$field.name}.args -> $arg
+    {
+        # ...if $field.args{$arg.name} is a variable, resolve it first
+        
+        %coercedValues{$arg.name} = $field.args{$arg.name} //
+            $arg.defaultValue //
+            die "Must provide $arg.name";
+
+        # ...Coerce value to type
+    }
+
+    return %coercedValues;
 }
 
 sub CollectFields(GraphQL::Object :$objectType,

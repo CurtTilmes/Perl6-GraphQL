@@ -20,7 +20,7 @@ GraphQL::Schema.new(
             GraphQL::Object.new(
                 name => 'Query',
                 fields => GraphQL::FieldList.new(
-                    hello => GraphQL::Field.new(
+                    'hello', GraphQL::Field.new(
                         name => 'hello',
                         type => $GraphQLString
                     )
@@ -42,7 +42,7 @@ GraphQL::Schema.new(
             GraphQL::Object.new(
                 name => 'Query',
                 fields => GraphQL::FieldList.new(
-                    hello => GraphQL::Field.new(
+                    'hello', GraphQL::Field.new(
                         name => 'hello',
                         type => GraphQL::Non-Null.new(ofType => $GraphQLString)
                     )
@@ -64,7 +64,7 @@ GraphQL::Schema.new(
             GraphQL::Object.new(
                 name => 'Query',
                 fields => GraphQL::FieldList.new(
-                    hello => GraphQL::Field.new(
+                    'hello', GraphQL::Field.new(
                         name => 'hello',
                         type => GraphQL::List.new(ofType => $GraphQLString)
                     )
@@ -86,7 +86,7 @@ GraphQL::Schema.new(
             GraphQL::Object.new(
                 name => 'Query',
                 fields => GraphQL::FieldList.new(
-                    hello => GraphQL::Field.new(
+                    'hello', GraphQL::Field.new(
                         name => 'hello',
                         type => GraphQL::Non-Null.new(
                             ofType => GraphQL::List.new(
@@ -117,24 +117,24 @@ GraphQL::Schema.new(
             GraphQL::Object.new(
                 name => 'Query',
                 fields => GraphQL::FieldList.new(
-                    id => GraphQL::Field.new(
+                    'id', GraphQL::Field.new(
                         name => 'id',
                         type => GraphQL::Non-Null.new(
                             ofType => $GraphQLID)
                     ),
-                    name => GraphQL::Field.new(
+                    'name', GraphQL::Field.new(
                         name => 'name',
                         type => $GraphQLString
                     ),
-                    age => GraphQL::Field.new(
+                    'age', GraphQL::Field.new(
                         name => 'age',
                         type => $GraphQLInt
                     ),
-                    balance => GraphQL::Field.new(
+                    'balance', GraphQL::Field.new(
                         name => 'balance',
                         type => $GraphQLFloat
                     ),
-                    is_active => GraphQL::Field.new(
+                    'is_active', GraphQL::Field.new(
                         name => 'is_active',
                         type => $GraphQLBoolean
                     )
@@ -156,7 +156,7 @@ GraphQL::Schema.new(
             GraphQL::Object.new(
                 name => 'Query',
                 fields => GraphQL::FieldList.new(
-                    hello => GraphQL::Field.new(
+                    'hello', GraphQL::Field.new(
                         name => 'hello',
                         type => $GraphQLString,
                         args =>
@@ -185,7 +185,7 @@ GraphQL::Schema.new(
             GraphQL::Object.new(
                 name => 'Query',
                 fields => GraphQL::FieldList.new(
-                    hello => GraphQL::Field.new(
+                    'hello', GraphQL::Field.new(
                         name => 'hello',
                         type => $GraphQLString,
                         args =>
@@ -215,7 +215,7 @@ GraphQL::Schema.new(
             GraphQL::Object.new(
                 name => 'Query',
                 fields => GraphQL::FieldList.new(
-                    hello => GraphQL::Field.new(
+                    'hello', GraphQL::Field.new(
                         name => 'hello',
                         type => $GraphQLString,
                         args =>
@@ -264,7 +264,7 @@ GraphQL::Schema.new(
             GraphQL::Object.new(
                 name => 'Query',
                 fields => GraphQL::FieldList.new(
-                    hello => GraphQL::Field.new(
+                    'hello', GraphQL::Field.new(
                         name => 'hello',
                         type => $GraphQLString,
                         args =>
@@ -299,7 +299,10 @@ GraphQL::Schema.new(
                 )
             )
     }
-),;
+),
+#----------------------------------------------------------------------
+
+;
 
 
 for @testcases -> $description, $query, $schema

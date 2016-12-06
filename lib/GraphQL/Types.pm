@@ -60,11 +60,24 @@ class GraphQL::Non-Null is GraphQL::Type
 # Because the GraphQL spec stupidly defines these to be ordered..
 class GraphQL::FieldList is Hash::Ordered {}
 
+class GraphQL::Interface is GraphQL::Type
+{
+    has Str $.kind = 'INTERFACE';
+    has GraphQL::FieldList $.fields;
+
+    method Str
+    {
+        "interface $.name \{\n" ~
+            $!fields.values.map({"  " ~ .Str}).join("\n") ~
+        "\n}\n"
+    }
+}
+
 class GraphQL::Object is GraphQL::Type
 {
     has Str $.kind = 'OBJECT';
     has GraphQL::FieldList $.fields;
-    has GraphQL::Type @.interfaces is rw;
+    has GraphQL::Interface @.interfaces is rw;
 
     method Str
     {
@@ -100,31 +113,52 @@ class GraphQL::Field is GraphQL::Type
     method Str
     {
         "$.name" ~
-            ('(' ~ @.args.join(', ') ~ ')' if @.args)
-        ~ ": $.type.name()"
+            ('(' ~ @!args.join(', ') ~ ')' if @!args)
+        ~ ": $!type.name()"
     }
 
-    method resolve($objectValue, %argumentValues)
+    method resolve(:$objectValue, :%argumentValues, :$schema)
     {
-        given $!resolver.arity
+        #
+        # To provide a lot of flexibility in how the resolver
+        # gets called, introspect it and try to give it what
+        # it wants.  Just a few styles implemented so far.
+        #
+        my %args;
+
+        given $!resolver
         {
-            when 0 { $!resolver() }
-            when 1 { $!resolver($objectValue) }
-            when 2 { $!resolver($objectValue, %argumentValues) }
+            when Code
+            {
+                for $!resolver.signature.params -> $p
+                {
+                    if $p.named
+                    {
+                        for $p.named_names -> $param_name
+                        {
+                            if $param_name eq 'schema'
+                            {
+                                %args<schema> = $schema;
+                                last;
+                            }
+                            if $param_name eq 'objectValue'
+                            {
+                                %args<objectValue> = $objectValue;
+                                last;
+                            }
+                            if %argumentValues{$param_name}:exists
+                            {
+                                %args{$param_name} =
+                                    %argumentValues{$param_name};
+                                last;
+                            }
+                        }
+                    }
+                }
+            }
         }
-    }
-}
 
-class GraphQL::Interface is GraphQL::Type
-{
-    has Str $.kind = 'INTERFACE';
-    has GraphQL::FieldList $.fields;
-
-    method Str
-    {
-        "interface $.name \{\n" ~
-            $!fields.values.map({"  " ~ .Str}).join("\n") ~
-        "\n}\n"
+        return $!resolver(|%args);
     }
 }
 
@@ -151,7 +185,6 @@ class GraphQL::Enum is GraphQL::Scalar
         "enum $.name \{\n" ~
             $.enumValues.keys.map({ "  $_"}).join("\n") ~
         "\n}\n";
-        
     }
 }
 
@@ -174,6 +207,52 @@ our $GraphQLInt     is export = GraphQL::Int.new;
 our $GraphQLBoolean is export = GraphQL::Boolean.new;
 our $GraphQLID      is export = GraphQL::ID.new;
 
+my $GraphQL__TypeKind = GraphQL::Enum.new(
+    name => '__TypeKind',
+    enumValues => set qw<SCALAR OBJECT INTERFACE UNION ENUM INPUT_OBJECT
+                         LIST NON_NULL>
+);
+
+my $GraphQL__Type = GraphQL::Object.new(
+    name => '__Type',
+    fields => GraphQL::FieldList.new(
+        'kind', GraphQL::Field.new(
+            name => 'kind',
+            type => $GraphQL__TypeKind,
+            resolver => sub (:$objectValue) { $objectValue.kind }
+        ),
+        'name', GraphQL::Field.new(
+            name => 'name',
+            type => $GraphQLString,
+            resolver => sub (:$objectValue) { $objectValue.name }
+        ),
+        'description', GraphQL::Field.new(
+            name => 'description',
+            type => $GraphQLString,
+            resolver => sub (:$objectValue) { $objectValue.description }
+        ),
+        'interfaces', GraphQL::Field.new(
+            name => 'interfaces'
+            # type => List ofType __Type
+        ),
+        'possibleTypes', GraphQL::Field.new(
+            name => 'possibleTypes'
+            # type => List ofType __Type
+        )
+    )
+);
+
+# Monkey Patching... Fill in recursive types...
+
+
+$GraphQL__Type.fields<interfaces>.type = GraphQL::List.new(
+    ofType => $GraphQL__Type
+);
+
+$GraphQL__Type.fields<possibleTypes>.type = GraphQL::List.new(
+    ofType => $GraphQL__Type
+);
+
 my %defaultTypes =
     Int     => $GraphQLInt,
     Float   => $GraphQLFloat,
@@ -186,15 +265,9 @@ my %defaultTypes =
         fields => GraphQL::FieldList.new()
     ),
 
-    __Type => GraphQL::Object.new(
-        name => '__Type',
-        fields => GraphQL::FieldList.new()
-    ),
+    __Type => $GraphQL__Type,
 
-    __TypeKind => GraphQL::Enum.new(
-        name => '__TypeKind',
-        enumValues => set ()
-    ),
+    __TypeKind => $GraphQL__TypeKind,
 
     __Field => GraphQL::Object.new(
         name => '__Field',
@@ -213,21 +286,13 @@ my %defaultTypes =
     
     __Directive => GraphQL::Directive.new();
 
-class GraphQL::Argument
-{
-    has $.name;
-    has $.value;
-
-    method Str { "$.name: $.value" }
-}
-
 class GraphQL::Operation
 {
     has Str $.operation = 'query';
     has Str $.name;
     has %.vars;
     has %.directives;
-    has @.selectionset;
+    has @.selectionset;  # QueryField or Fragment
 
     method Str
     {
@@ -241,7 +306,7 @@ class GraphQL::QueryField
 {
     has Str $.alias;
     has Str $.name;
-    has GraphQL::Argument @.args;
+    has %.args;
     has GraphQL::Directive @.directives;
     has @.selectionset;
 
@@ -249,12 +314,13 @@ class GraphQL::QueryField
 
     method Str(Str $indent = '')
     {
-        $indent ~ ($.alias ~ ': ' if $.alias) ~ $.name ~
-        ('(' ~ @.args.map({.Str}).join(', ') ~')' if @.args.elems) ~
-            (" \{\n" ~ @.selectionset
-                        .map({.Str($indent ~ '  ')})
-                        .join("\n") 
-                 ~ $indent ~ '}' if @.selectionset.elems) 
+        $indent ~ ($!alias ~ ':=' if $!alias) ~ $!name
+        ~
+            ( '(' ~ %!args.keys.map({$_.Str ~ ':' ~ %!args{$_}.perl})
+                               .join(', ') ~ ')' if %!args)
+        ~
+            ( " \{\n" ~ @!selectionset.map({.Str($indent ~ '  ')}).join('') ~
+              $indent ~ '}' if @!selectionset)
         ~ "\n"
     }
 }
@@ -303,6 +369,11 @@ class GraphQL::Document
     }
 }
 
+sub introspect-type(:$name, :$schema)
+{
+    return $schema.type($name);
+}
+
 class GraphQL::Schema
 {
     has %.types;
@@ -312,12 +383,9 @@ class GraphQL::Schema
 
     method type($query = $!query) { %!types{$query} }
 
-    method BUILD(:%types, :$query, :$mutation, :$subscription)
+    method BUILD(:%types, :$!query = 'Query', :$!mutation, :$!subscription)
     {
         %!types = %defaultTypes, %types;
-        $!query = $query // 'Query';
-        $!mutation = $mutation;
-        $!subscription = $subscription;
     }
 
     method Str
@@ -351,5 +419,22 @@ class GraphQL::Schema
             }
             
         }
+    }
+
+    method introspectionfields()
+    {
+        my $roottype = self.type;
+        
+        $roottype.fields<__type> //= GraphQL::Field.new(
+            name => '__type',
+            type => self.type('__Type'),
+            args => [ GraphQL::TypeArgument.new(
+                          name => 'name',
+                          type => GraphQL::Non-Null.new(
+                              ofType => $GraphQLString
+                          )
+                      ) ],
+            resolver => &introspect-type
+        );
     }
 }
