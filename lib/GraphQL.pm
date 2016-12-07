@@ -18,6 +18,7 @@ sub GetDeprecationReason(:$objectValue) { $objectValue.deprecationReason }
 sub GetDefaultValue(:$objectValue)      { $objectValue.defaultValue }
 
 my %GraphQL-Introspection-Resolvers =
+
 __Schema =>
 {
     types => sub (GraphQL::Schema :$schema) { $schema.types.values.eager },
@@ -26,6 +27,7 @@ __Schema =>
                         { $schema.type($schema.mutation) },
     directives => sub (GraphQL::Schema :$schema) { die }
 },
+
 __Type => 
 {
     kind => &GetKind,
@@ -51,9 +53,22 @@ __Type =>
     {
         return unless $objectValue ~~ GraphQL::Interface | GraphQL::Union;
         $objectValue.possibleTypes.keys
-    }
+    },
 
+    enumValues => sub (:$objectValue, :$includeDeprecated)
+    {
+        return unless $objectValue ~~ GraphQL::Enum;
+        $objectValue.enumValues.keys
+                    .grep({$includeDeprecated or not .isDeprecated}).eager
+    },
+
+    ofType => sub (:$objectValue)
+    { 
+        return unless $objectValue ~~ GraphQL::Non-Null | GraphQL::List;
+        $objectValue.ofType
+    }
 },
+
 __Field =>
 {
     name => &GetName,
@@ -63,6 +78,7 @@ __Field =>
     isDeprecated => &GetIsDeprecated,
     deprecationReason => &GetDeprecationReason
 },
+
 __InputValue =>
 {
     name => &GetName,
@@ -70,6 +86,7 @@ __InputValue =>
     type => &GetType,
     defaultValue => &GetDefaultValue    
 },
+
 __EnumValue =>
 {
     name => &GetName,
@@ -77,7 +94,17 @@ __EnumValue =>
     isDeprecated => &GetIsDeprecated,
     deprecationReason => &GetDeprecationReason
 },
-;
+
+__Directive => 
+{
+    name => &GetName,
+    description => &GetDescription,
+    locations => sub (GraphQL::Directive :$objectValue)
+    {
+        $objectValue.locations
+    },
+    args => &GetArgs
+};
 
 sub build-schema(Str $schemastring) returns GraphQL::Schema is export
 {

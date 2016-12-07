@@ -199,7 +199,6 @@ class GraphQL::Enum is GraphQL::Scalar
     }
 }
 
-# Make this a real GraphQL Enum?
 enum GraphQL::DirectiveLocation<QUERY MUTATION FIELD FRAGMENT_DEFINITION
    FRAGMENT_SPREAD INLINE_FRAGMENT>;
 
