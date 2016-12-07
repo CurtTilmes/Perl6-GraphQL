@@ -41,7 +41,7 @@ sub build-schema(Str $schemastring) returns GraphQL::Schema is export
                           ofType => $GraphQLString
                       )
                   ) ],
-        resolver => sub (:$name, :$schema) { $schema.type($name) }
+        resolver => sub (:$name) { $schema.type($name) }
     ));
 
     $schema.queryType.addfield(GraphQL::Field.new(
@@ -49,7 +49,7 @@ sub build-schema(Str $schemastring) returns GraphQL::Schema is export
         type => GraphQL::Non-Null.new(
             ofType => $schema.type('__Schema')
         ),
-        resolver => sub (GraphQL::Schema :$schema) { $schema }
+        resolver => sub { $schema }
     ));
 
     return $schema;
@@ -112,8 +112,7 @@ sub ExecuteQuery(GraphQL::Operation :$operation,
     my $data = ExecuteSelectionSet(selectionSet => $operation.selectionset,
                                    objectType => $schema.queryType,
                                    objectValue => $initialValue,
-                                   :%variableValues,
-                                   :$schema);
+                                   :%variableValues);
 
     return %(
         data => $data
@@ -124,8 +123,7 @@ sub ExecuteQuery(GraphQL::Operation :$operation,
 sub ExecuteSelectionSet(:@selectionSet,
                         GraphQL::Object :$objectType,
                         :$objectValue,
-                        :%variableValues,
-                        :$schema)
+                        :%variableValues)
 {
     my $groupedFieldSet = CollectFields(:$objectType,
                                         :@selectionSet,
@@ -151,8 +149,7 @@ sub ExecuteSelectionSet(:@selectionSet,
                                           :$objectValue,
                                           :@fields,
                                           :$fieldType,
-                                          :%variableValues,
-                                          :$schema);
+                                          :%variableValues);
         }
 
         $resultMap{$responseKey} = $responseValue;
@@ -165,8 +162,7 @@ sub ExecuteField(GraphQL::Object :$objectType,
                  :$objectValue,
                  :@fields,
                  GraphQL::Type :$fieldType,
-                 :%variableValues,
-                 :$schema)
+                 :%variableValues)
 {
     my $field = @fields[0];
 
@@ -176,22 +172,19 @@ sub ExecuteField(GraphQL::Object :$objectType,
 
     my $resolvedValue = $objectType.field($field.name)
                                    .resolve(:$objectValue,
-                                            :%argumentValues,
-                                            :$schema);
+                                            :%argumentValues);
 
     return CompleteValue(:$fieldType,
                          :@fields,
                          :result($resolvedValue),
-                         :%variableValues,
-                         :$schema);
+                         :%variableValues);
      
 }
 
 sub CompleteValue(GraphQL::Type :$fieldType,
                   :@fields,
                   :$result,
-                  :%variableValues,
-                  :$schema)
+                  :%variableValues)
 {
     given $fieldType
     {
@@ -200,8 +193,7 @@ sub CompleteValue(GraphQL::Type :$fieldType,
             my $completedResult = CompleteValue(:fieldType($fieldType.ofType),
                                                 :@fields,
                                                 :$result,
-                                                :%variableValues,
-                                                :$schema);
+                                                :%variableValues);
             
             die "Null in non-null type" unless $completedResult.defined;
 
@@ -217,8 +209,7 @@ sub CompleteValue(GraphQL::Type :$fieldType,
             return $result.map({CompleteValue(:fieldType($fieldType.ofType),
                                               :@fields,
                                               :result($_),
-                                              :%variableValues,
-                                              :$schema)});
+                                              :%variableValues)});
         }
 
         when GraphQL::Scalar
@@ -237,8 +228,7 @@ sub CompleteValue(GraphQL::Type :$fieldType,
             return ExecuteSelectionSet(:selectionSet(@subSelectionSet),
                                        :$objectType,
                                        :objectValue($result),
-                                       :%variableValues,
-                                       :$schema);
+                                       :%variableValues);
         }
 
         default 

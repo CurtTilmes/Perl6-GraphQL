@@ -131,7 +131,7 @@ class GraphQL::Field is GraphQL::Type
     has GraphQL::InputValue @.args is rw;
     has Bool $.isDeprecated = False;
     has Str $.deprecationReason;
-    has Callable $.resolver is rw;
+    has Sub $.resolver is rw;
 
     method Str
     {
@@ -140,7 +140,7 @@ class GraphQL::Field is GraphQL::Type
         ~ ": $!type.name()"
     }
 
-    method resolve(:$objectValue, :%argumentValues, :$schema)
+    method resolve(:$objectValue, :%argumentValues)
     {
         unless $!resolver.defined
 	{
@@ -151,7 +151,7 @@ class GraphQL::Field is GraphQL::Type
 
         #
         # To provide a lot of flexibility in how the resolver
-        # gets called, introspect it and try to give it what
+        # gets called, introspect it and try to give it the args
         # it wants.  Just a few styles implemented so far.
         #
         my %args;
@@ -166,11 +166,6 @@ class GraphQL::Field is GraphQL::Type
                     {
                         for $p.named_names -> $param_name
                         {
-                            if $param_name eq 'schema'
-                            {
-                                %args<schema> = $schema;
-                                last;
-                            }
                             if $param_name eq 'objectValue'
                             {
                                 %args<objectValue> = $objectValue;
