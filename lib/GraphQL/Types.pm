@@ -86,8 +86,8 @@ class GraphQL::Object is GraphQL::Type
             ('implements ' ~ @.interfaces.map({.name}).join(', ') ~ ' '
                 if @.interfaces)
         ~ "\{\n" ~
-        $.fields.values.map({'  ' ~ .Str}).join("\n") ~
-        "\n}\n"
+        $.fields.values.grep({.name !~~ /^__/}).map({'  ' ~ .Str}).join("\n")
+	~ "\n}\n"
     }
 }
 
@@ -120,7 +120,10 @@ class GraphQL::Field is GraphQL::Type
 
     method resolve(:$objectValue, :%argumentValues, :$schema)
     {
-        return Nil unless $!resolver.defined;
+        unless $!resolver.defined
+	{
+	    say "No resolver, trying default";
+	}
 
         #
         # To provide a lot of flexibility in how the resolver
@@ -327,7 +330,7 @@ class GraphQL::Schema
 
         for %!types.kv -> $typename, $type
         {
-            next if %defaultTypes{$typename}.defined;# or $typename ~~ /^__/;
+            next if %defaultTypes{$typename}.defined or $typename ~~ /^__/;
             $str ~= $type.Str ~ "\n";
         }
 

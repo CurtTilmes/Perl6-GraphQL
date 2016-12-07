@@ -150,6 +150,8 @@ sub build-schema(Str $schemastring) returns GraphQL::Schema is export
         resolver => sub (GraphQL::Schema :$schema) { $schema }
     );
 
+    # Then add introspection resolvers
+
     $schema.resolvers(%GraphQL-Introspection-Resolvers);
 
     return $schema;
