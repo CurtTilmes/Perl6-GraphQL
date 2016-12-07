@@ -90,7 +90,7 @@ class GraphQL::Object is GraphQL::Type
     }
 }
 
-class GraphQL::TypeArgument is GraphQL::Type
+class GraphQL::InputValue is GraphQL::Type
 {
     has GraphQL::Type $.type is rw;
     has $.defaultValue;
@@ -105,7 +105,7 @@ class GraphQL::TypeArgument is GraphQL::Type
 class GraphQL::Field is GraphQL::Type
 {
     has GraphQL::Type $.type is rw;
-    has GraphQL::TypeArgument @.args is rw;
+    has GraphQL::InputValue @.args is rw;
     has Bool $.isDeprecated = False;
     has Str $.deprecationReason;
     has Callable $.resolver is rw;
@@ -119,6 +119,8 @@ class GraphQL::Field is GraphQL::Type
 
     method resolve(:$objectValue, :%argumentValues, :$schema)
     {
+        return Nil unless $!resolver.defined;
+
         #
         # To provide a lot of flexibility in how the resolver
         # gets called, introspect it and try to give it what
@@ -175,6 +177,14 @@ class GraphQL::Union is GraphQL::Type
     }
 }
 
+class GraphQL::EnumValue is GraphQL::Scalar
+{
+    has Bool $.isDeprecated = False;
+    has Str $.deprecationReason;
+
+    method Str { $.name }
+}
+
 class GraphQL::Enum is GraphQL::Scalar
 {
     has Str $.kind = 'ENUM';
@@ -183,7 +193,7 @@ class GraphQL::Enum is GraphQL::Scalar
     method Str
     {
         "enum $.name \{\n" ~
-            $.enumValues.keys.map({ "  $_"}).join("\n") ~
+            $.enumValues.keys.map({ "  $_.Str()"}).join("\n") ~
         "\n}\n";
     }
 }
@@ -195,7 +205,7 @@ enum GraphQL::DirectiveLocation<QUERY MUTATION FIELD FRAGMENT_DEFINITION
 class GraphQL::Directive is GraphQL::Type
 {
     has GraphQL::DirectiveLocation @.locations;
-    has GraphQL::TypeArgument @.args;
+    has GraphQL::InputValue @.args;
 }
 
 #
@@ -207,84 +217,12 @@ our $GraphQLInt     is export = GraphQL::Int.new;
 our $GraphQLBoolean is export = GraphQL::Boolean.new;
 our $GraphQLID      is export = GraphQL::ID.new;
 
-my $GraphQL__TypeKind = GraphQL::Enum.new(
-    name => '__TypeKind',
-    enumValues => set qw<SCALAR OBJECT INTERFACE UNION ENUM INPUT_OBJECT
-                         LIST NON_NULL>
-);
-
-my $GraphQL__Type = GraphQL::Object.new(
-    name => '__Type',
-    fields => GraphQL::FieldList.new(
-        'kind', GraphQL::Field.new(
-            name => 'kind',
-            type => $GraphQL__TypeKind,
-            resolver => sub (:$objectValue) { $objectValue.kind }
-        ),
-        'name', GraphQL::Field.new(
-            name => 'name',
-            type => $GraphQLString,
-            resolver => sub (:$objectValue) { $objectValue.name }
-        ),
-        'description', GraphQL::Field.new(
-            name => 'description',
-            type => $GraphQLString,
-            resolver => sub (:$objectValue) { $objectValue.description }
-        ),
-        'interfaces', GraphQL::Field.new(
-            name => 'interfaces'
-            # type => List ofType __Type
-        ),
-        'possibleTypes', GraphQL::Field.new(
-            name => 'possibleTypes'
-            # type => List ofType __Type
-        )
-    )
-);
-
-# Monkey Patching... Fill in recursive types...
-
-
-$GraphQL__Type.fields<interfaces>.type = GraphQL::List.new(
-    ofType => $GraphQL__Type
-);
-
-$GraphQL__Type.fields<possibleTypes>.type = GraphQL::List.new(
-    ofType => $GraphQL__Type
-);
-
-my %defaultTypes =
+our %defaultTypes is export =
     Int     => $GraphQLInt,
     Float   => $GraphQLFloat,
     String  => $GraphQLString,
     Boolean => $GraphQLBoolean,
-    ID      => $GraphQLID,
-
-    __Schema => GraphQL::Object.new(
-        name => '__Schema',
-        fields => GraphQL::FieldList.new()
-    ),
-
-    __Type => $GraphQL__Type,
-
-    __TypeKind => $GraphQL__TypeKind,
-
-    __Field => GraphQL::Object.new(
-        name => '__Field',
-        fields => GraphQL::FieldList.new()
-    ),
-
-    __EnumValue => GraphQL::Object.new(
-        name => '__EnumValue',
-        fields => GraphQL::FieldList.new()
-    ),
-
-    __InputValue => GraphQL::Object.new(
-        name => '__InputValue',
-        fields => GraphQL::FieldList.new()
-    ),
-    
-    __Directive => GraphQL::Directive.new();
+    ID      => $GraphQLID;
 
 class GraphQL::Operation
 {
@@ -369,11 +307,6 @@ class GraphQL::Document
     }
 }
 
-sub introspect-type(:$name, :$schema)
-{
-    return $schema.type($name);
-}
-
 class GraphQL::Schema
 {
     has %.types;
@@ -394,7 +327,7 @@ class GraphQL::Schema
 
         for %!types.kv -> $typename, $type
         {
-            next if %defaultTypes{$typename}.defined;
+            next if %defaultTypes{$typename}.defined;# or $typename ~~ /^__/;
             $str ~= $type.Str ~ "\n";
         }
 
@@ -419,22 +352,5 @@ class GraphQL::Schema
             }
             
         }
-    }
-
-    method introspectionfields()
-    {
-        my $roottype = self.type;
-        
-        $roottype.fields<__type> //= GraphQL::Field.new(
-            name => '__type',
-            type => self.type('__Type'),
-            args => [ GraphQL::TypeArgument.new(
-                          name => 'name',
-                          type => GraphQL::Non-Null.new(
-                              ofType => $GraphQLString
-                          )
-                      ) ],
-            resolver => &introspect-type
-        );
     }
 }

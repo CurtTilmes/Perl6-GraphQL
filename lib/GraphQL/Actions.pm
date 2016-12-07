@@ -41,7 +41,6 @@ method Document($/)
     make $!q;
 }
 
-
 method OperationDefinition($/)
 {
     my $name = $<Name> ?? $<Name>.made !! '';
@@ -281,7 +280,7 @@ method EnumDefinition($/)
 
 method EnumValues($/)
 {
-    make set $<Name>.map({.made});
+    make set $<Name>.map({ GraphQL::EnumValue.new(name => $_.made) });
 }
 
 method DefaultValue($/)
@@ -291,8 +290,8 @@ method DefaultValue($/)
 
 method ArgumentDefinition($/)
 {
-    my $t = GraphQL::TypeArgument.new(name => $<Name>.made,
-                                      defaultValue => $<DefaultValue>.made);
+    my $t = GraphQL::InputValue.new(name => $<Name>.made,
+                                    defaultValue => $<DefaultValue>.made);
 
     push @!fields-to-type, $<Type>.made => $t;
 
@@ -322,7 +321,7 @@ method TypeSchema($/)
 
         given $field.value
         {
-            when GraphQL::Field | GraphQL::TypeArgument
+            when GraphQL::Field | GraphQL::InputValue
             {
                 $field.value.type = $!s.types{$field.key}
             }
@@ -354,9 +353,6 @@ method TypeSchema($/)
             }
         }
     }
-
-    die "Missing root query type $!s.query()" 
-        unless $!s.type() and $!s.type().kind ~~ 'OBJECT';
 
     make $!s;
 }

@@ -6,15 +6,100 @@ unit module GraphQL;
 use GraphQL::Types;
 use GraphQL::Actions;
 use GraphQL::Grammar;
+use GraphQL::Introspection;
 
-sub build-schema(Str $schema) returns GraphQL::Schema is export
+
+my %GraphQL-Introspection-Resolvers =
+__Type => 
 {
-    GraphQL::Grammar.parse($schema,
-                           actions => GraphQL::Actions.new,
-                           rule => 'TypeSchema')
+    name => sub (:$objectValue) { $objectValue.name },
+    
+    kind => sub (:$objectValue) { $objectValue.kind },
+
+    description => sub (:$objectValue) { $objectValue.description },
+
+    fields => sub (:$objectValue, Bool :$includeDeprecated)
+    {
+        return unless $objectValue ~~ GraphQL::Object | GraphQL::Interface;
+        $objectValue.fields.values
+                    .grep({.name !~~ /^__/ and
+                               ($includeDeprecated or not .isDeprecated) })
+                    .eager
+    },
+
+    interfaces => sub (:$objectValue)
+    {
+        return unless $objectValue ~~ GraphQL::Object;
+        $objectValue.interfaces
+    },
+
+},
+__Field =>
+{
+    name => sub (:$objectValue) { $objectValue.name },
+
+    description => sub (:$objectValue) { $objectValue.description },
+
+    args => sub (:$objectValue) { $objectValue.args },
+
+    type => sub (:$objectValue) { $objectValue.type },
+
+    isDeprecated => sub (:$objectValue) { $objectValue.isDeprecated },
+
+    deprecationReason => sub (:$objectValue) { $objectValue.deprecationReason }
+},
+__InputValue =>
+{
+    name => sub (:$objectValue) { $objectValue.name }
+}
+;
+
+sub build-schema(Str $schemastring) returns GraphQL::Schema is export
+{
+    # First add Introspection types
+
+    my $actions = GraphQL::Actions.new;
+
+    GraphQL::Grammar.parse($GraphQL-Introspection-Schema,
+                           :$actions,
+                           :rule('TypeSchema'))
+        or die "Failed to parse Introspection Schema";
+
+    my $schema = $/.made;
+
+    # Then parse the specified schema string
+
+    GraphQL::Grammar.parse($schemastring, 
+                           :$schema, :$actions, :rule('TypeSchema'))
         or die "Failed to parse schema";
 
-    $/.made;
+    die "Missing root query type $schema.query()" 
+        unless $schema.type() and $schema.type().kind ~~ 'OBJECT';
+
+    # Then add meta-fields __schema and __type to the root type
+
+    $schema.type().fields<__type> = GraphQL::Field.new(
+        name => '__type',
+        type => $schema.type('__Type'),
+        args => [ GraphQL::InputValue.new(
+                      name => 'name',
+                      type => GraphQL::Non-Null.new(
+                          ofType => $GraphQLString
+                      )
+                  ) ],
+        resolver => sub (:$name, :$schema) { $schema.type($name) }
+    );
+
+    $schema.type().fields<__schema> = GraphQL::Field.new(
+        name => '__schema',
+        type => GraphQL::Non-Null.new(
+            ofType => $schema.type('__Schema')
+        )
+    );
+
+    $schema.resolvers(%GraphQL-Introspection-Resolvers);
+
+    return $schema;
 }
 
 sub parse-query(Str $query) returns GraphQL::Document is export
@@ -34,10 +119,6 @@ sub ExecuteRequest(GraphQL::Schema :$schema,
                    :$initialValue) is export
 {
     my $operation = $query.GetOperation($operationName);
-
-    # Make sure schema root field has the introspection types
-    
-    $schema.introspectionfields;
 
     my %coercedVariableValues = CoerceVariableValues(:$schema,
                                                      :$operation,
@@ -81,9 +162,9 @@ sub ExecuteQuery(GraphQL::Operation :$operation,
                                    :%variableValues,
                                    :$schema);
 
-    return {
+    return %(
         data => $data
-    };
+    );
 
 }
 
@@ -111,6 +192,10 @@ sub ExecuteSelectionSet(:@selectionSet,
         }
         else
         {
+            say $objectType.name;
+            say $objectType.Str;
+            say $fieldName;
+            
             my $fieldType = $objectType.fields{$fieldName}.type or next;
 
             $responseValue = ExecuteField(:$objectType, 
@@ -161,6 +246,37 @@ sub CompleteValue(GraphQL::Type :$fieldType,
 {
     given $fieldType
     {
+        when GraphQL::Non-Null
+        {
+            my $completedResult = CompleteValue(:fieldType($fieldType.ofType),
+                                                :@fields,
+                                                :$result,
+                                                :%variableValues,
+                                                :$schema);
+            
+            die "Null in non-null type" unless $completedResult.defined;
+
+            return $completedResult;
+        }
+        
+        return Nil unless $result.defined;
+
+        when GraphQL::List
+        {
+            die "Must return a List" unless $result ~~ List;
+
+            return $result.map({CompleteValue(:fieldType($fieldType.ofType),
+                                              :@fields,
+                                              :result($_),
+                                              :%variableValues,
+                                              :$schema)});
+        }
+
+        when GraphQL::Scalar
+        {
+            return $result // Nil;
+        }
+
         when GraphQL::Object | GraphQL::Interface | GraphQL::Union
         {
             my $objectType = * ~~ GraphQL::Object 
@@ -175,13 +291,9 @@ sub CompleteValue(GraphQL::Type :$fieldType,
                                        :%variableValues,
                                        :$schema);
         }
-        when GraphQL::Scalar
-        {
-            return $result // Nil;
-        }
+
         default 
         {
-            say $fieldType;
             die "Complete Value Unknown Type";
         }
     }
