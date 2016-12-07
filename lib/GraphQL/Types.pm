@@ -5,7 +5,7 @@ unit module GraphQL::Types;
 class GraphQL::Type
 {
     has Str  $.name;
-    has Str  $.description;
+    has Str  $.description is rw;
 }
 
 class GraphQL::Scalar is GraphQL::Type
@@ -90,7 +90,7 @@ class GraphQL::Object is GraphQL::Type
 
     method field($fieldname) { $!fields{$fieldname} }
 
-    method fields(Bool :$includeDeprecated)
+    method fields(Bool $includeDeprecated)
     {
 	$!fields.values.grep: {.name !~~ /^__/ and
 				   ($includeDeprecated or not .isDeprecated) }
@@ -102,7 +102,9 @@ class GraphQL::Object is GraphQL::Type
             ('implements ' ~ (@!interfaces».name).join(', ') ~ ' '
                 if @.interfaces)
         ~ "\{\n" ~
-        $.fields.values.grep({.name !~~ /^__/}).map({'  ' ~ .Str}).join("\n")
+        $.fields(True).values.grep({.name !~~ /^__/})
+                             .map({'  ' ~ .Str})
+                             .join("\n")
 	~ "\n}\n"
     }
 }
@@ -119,19 +121,35 @@ class GraphQL::InputValue is GraphQL::Type
     }
 }
 
-class GraphQL::Field is GraphQL::Type
+role Deprecatable
+{
+    has Bool $.isDeprecated = False;
+    has Str $.deprecationReason;
+
+    method deprecate(Str $reason = "No longer supported.")
+    {
+	$!isDeprecated = True;
+	$!deprecationReason = $reason;
+    }
+
+    method deprecate-str
+    {
+	' @deprecated(reason: "' ~ $!deprecationReason ~ '")'
+	    if $!isDeprecated;
+    }
+}
+
+class GraphQL::Field is GraphQL::Type does Deprecatable
 {
     has GraphQL::Type $.type is rw;
     has GraphQL::InputValue @.args is rw;
-    has Bool $.isDeprecated = False;
-    has Str $.deprecationReason;
     has Sub $.resolver is rw;
 
     method Str
     {
         "$.name" ~
             ('(' ~ @!args.join(', ') ~ ')' if @!args)
-        ~ ": $!type.name()"
+        ~ ": $!type.name()" ~ self.deprecate-str
     }
 
     method resolve(:$objectValue, :%argumentValues)
@@ -188,18 +206,14 @@ class GraphQL::Union is GraphQL::Type
 
     method Str
     {
-        "union $.name = "
-            ~ (@!possibleTypes».name).join(' | ')
-            ~ "\n"
+        "union $.name = {(@!possibleTypes».name).join(' | ')}\n";
     }
 }
 
-class GraphQL::EnumValue is GraphQL::Scalar
+class GraphQL::EnumValue is GraphQL::Scalar does Deprecatable
 {
-    has Bool $.isDeprecated = False;
-    has Str $.deprecationReason;
-
-    method Str { $.name }
+    
+    method Str { $.name ~ self.deprecate-str }
 }
 
 class GraphQL::Enum is GraphQL::Scalar
@@ -220,12 +234,9 @@ class GraphQL::Enum is GraphQL::Scalar
     }
 }
 
-enum GraphQL::DirectiveLocation<QUERY MUTATION FIELD FRAGMENT_DEFINITION
-   FRAGMENT_SPREAD INLINE_FRAGMENT>;
-
 class GraphQL::Directive is GraphQL::Type
 {
-    has GraphQL::DirectiveLocation @.locations;
+    has GraphQL::EnumValue @.locations;
     has GraphQL::InputValue @.args;
 }
 

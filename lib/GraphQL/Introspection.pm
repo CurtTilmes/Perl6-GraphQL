@@ -70,5 +70,6 @@ enum __DirectiveLocation {
   FRAGMENT_DEFINITION
   FRAGMENT_SPREAD
   INLINE_FRAGMENT
+  ENUM_VALUE
 }
 >>;

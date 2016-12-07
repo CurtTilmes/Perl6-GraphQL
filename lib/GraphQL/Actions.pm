@@ -216,25 +216,45 @@ method FieldDefinitionList($/)
     make $fieldlist;
 }
 
+method Comment($/)
+{
+    make $/.Str.subst(/^\#/, '');
+}
+
 method FieldDefinition($/)
 {
+    my $f = GraphQL::Field.new(
+	name => $<Name>.made,
+	args => $<ArgumentDefinitions>.made // (),
+    );
+
+    if $<Comment>
+    {
+	$f.description = $<Comment>».made.join("\n");
+    }
+
     if $<Type>.made ~~ Str
     {
-        my $f = GraphQL::Field.new(
-            name => $<Name>.made,
-            args => $<ArgumentDefinitions>.made // (),
-        );
         push @!fields-to-type, $<Type>.made => $f;
-        make $f;
     }
     else
     {
-        make GraphQL::Field.new(
-            name => $<Name>.made,
-            type => $<Type>.made,
-            args => $<ArgumentDefinitions>.made // (),
-        );
+	$f.type = $<Type>.made;
     }
+
+    if $<Directives>.made<deprecated>:exists
+    {
+	if $<Directives>.made<deprecated><reason>:exists
+	{
+	    $f.deprecate($<Directives>.made<deprecated><reason>);
+	}
+	else
+	{
+	    $f.deprecate();
+	}
+    }
+
+    make $f;
 }
 
 method ObjectTypeDefinition($/)
@@ -282,7 +302,34 @@ method EnumDefinition($/)
 
 method EnumValues($/)
 {
-    make $<Name>.map({ GraphQL::EnumValue.new(name => $_.made) });
+    make $<EnumValue>».made;
+}
+
+method EnumValue($/)
+{
+    my $enumvalue = GraphQL::EnumValue.new(name => $<Name>.made);
+    if $<Directives>.made<deprecated>:exists
+    {
+	if $<Directives>.made<deprecated><reason>:exists
+	{
+	    $enumvalue.deprecate($<Directives>.made<deprecated><reason>);
+	}
+	else
+	{
+	    $enumvalue.deprecate();
+	}
+    }
+    make $enumvalue;
+}
+
+method Directives($/)
+{
+    my %directives;
+    for $<Directive> -> $directive
+    {
+	%directives{$directive<Name>.made} = $directive<Arguments>.made // Nil;
+    }
+    make %directives;
 }
 
 method DefaultValue($/)

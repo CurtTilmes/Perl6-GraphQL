@@ -5,7 +5,7 @@ unit grammar GraphQL::Grammar;
 token SourceCharacter { <[\x[0009]\x[000A]\x[000D]\x[0020]..\x[FFFF]]> }
 
 token Ignored
-{ <UnicodeBOM> | <WhiteSpace> | <LineTerminator> | <Comma> | <Comment> }
+{ <UnicodeBOM> | <WhiteSpace> | <LineTerminator> | <Comma> }
 
 token UnicodeBOM { \x[FEFF] }
 
@@ -14,7 +14,7 @@ token WhiteSpace { \x[0009] | \x[0020] }
 token LineTerminator
 { [ \x[000A] | \x[000D]<!before \x[000A]> | \x[000D]\x[000A] ]}
 
-token Comment { '#' <CommentChar>* }
+token Comment { '#' <.CommentChar>* }
 
 token CommentChar { <SourceCharacter><!after <LineTerminator>> }
 
@@ -163,7 +163,8 @@ rule InterfaceDefinition { 'interface' <Name> <FieldDefinitionList> }
 
 rule FieldDefinitionList { '{' <FieldDefinition>+ '}' }
 
-rule FieldDefinition { <Name> <ArgumentDefinitions>? ':' <Type> }
+rule FieldDefinition
+{ <Comment>* % <.ws> <Name> <ArgumentDefinitions>? ':' <Type> <Directives>? }
 
 rule ArgumentDefinitions { '(' <ArgumentDefinition>+ % <.ws> ')' }
 
@@ -184,7 +185,9 @@ rule UnionSep { <.ws> '|'  }
 
 rule EnumDefinition { 'enum' <Name> '{' <EnumValues> '}' }
 
-rule EnumValues { <Name>+ % <.ws> }
+rule EnumValues { <EnumValue>+ }
+
+rule EnumValue { <Name> <Directives>? }
 
 rule InputDefinition { 'input' <Name> <FieldDefinitionList> }
 
