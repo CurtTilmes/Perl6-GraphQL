@@ -64,6 +64,7 @@ class GraphQL::Interface is GraphQL::Type
 {
     has Str $.kind = 'INTERFACE';
     has GraphQL::FieldList $.fields;
+    has Set $.possibleTypes is rw;
 
     method Str
     {

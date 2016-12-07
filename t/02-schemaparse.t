@@ -161,7 +161,7 @@ GraphQL::Schema.new(
                         type => $GraphQLString,
                         args =>
                         [
-                             GraphQL::TypeArgument.new(
+                             GraphQL::InputValue.new(
                                  name => 'limit',
                                  type => $GraphQLInt
                              )
@@ -190,7 +190,7 @@ GraphQL::Schema.new(
                         type => $GraphQLString,
                         args =>
                         [
-                             GraphQL::TypeArgument.new(
+                             GraphQL::InputValue.new(
                                  name => 'limit',
                                  type => $GraphQLInt,
                                  defaultValue => 10
@@ -220,23 +220,23 @@ GraphQL::Schema.new(
                         type => $GraphQLString,
                         args =>
                         [
-                             GraphQL::TypeArgument.new(
+                             GraphQL::InputValue.new(
                                  name => 'id',
                                  type => $GraphQLID
                              ),
-                             GraphQL::TypeArgument.new(
+                             GraphQL::InputValue.new(
                                  name => 'first',
                                  type => $GraphQLInt
                              ),
-                             GraphQL::TypeArgument.new(
+                             GraphQL::InputValue.new(
                                  name => 'x',
                                  type => $GraphQLFloat
                              ),
-                             GraphQL::TypeArgument.new(
+                             GraphQL::InputValue.new(
                                  name => 'cond',
                                  type => $GraphQLBoolean
                              ),
-                             GraphQL::TypeArgument.new(
+                             GraphQL::InputValue.new(
                                  name => 'person',
                                  type => $GraphQLString
                              )
@@ -269,27 +269,27 @@ GraphQL::Schema.new(
                         type => $GraphQLString,
                         args =>
                         [
-                             GraphQL::TypeArgument.new(
+                             GraphQL::InputValue.new(
                                  name => 'id',
                                  type => $GraphQLID,
                                  defaultValue => '123xyz'
                              ),
-                             GraphQL::TypeArgument.new(
+                             GraphQL::InputValue.new(
                                  name => 'first',
                                  type => $GraphQLInt,
                                  defaultValue => 27
                              ),
-                             GraphQL::TypeArgument.new(
+                             GraphQL::InputValue.new(
                                  name => 'x',
                                  type => $GraphQLFloat,
                                  defaultValue => Num(1.2)
                              ),
-                             GraphQL::TypeArgument.new(
+                             GraphQL::InputValue.new(
                                  name => 'cond',
                                  type => $GraphQLBoolean,
                                  defaultValue => True,
                              ),
-                             GraphQL::TypeArgument.new(
+                             GraphQL::InputValue.new(
                                  name => 'person',
                                  type => $GraphQLString,
                                  defaultValue => 'Fred'

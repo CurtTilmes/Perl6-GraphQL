@@ -8,15 +8,29 @@ use GraphQL::Actions;
 use GraphQL::Grammar;
 use GraphQL::Introspection;
 
+sub GetName(:$objectValue)              { $objectValue.name }
+sub GetKind(:$objectValue)              { $objectValue.kind }
+sub GetDescription(:$objectValue)       { $objectValue.description }
+sub GetArgs(:$objectValue)              { $objectValue.args }
+sub GetType(:$objectValue)              { $objectValue.type }
+sub GetIsDeprecated(:$objectValue)      { $objectValue.isDeprecated }
+sub GetDeprecationReason(:$objectValue) { $objectValue.deprecationReason }
+sub GetDefaultValue(:$objectValue)      { $objectValue.defaultValue }
 
 my %GraphQL-Introspection-Resolvers =
+__Schema =>
+{
+    types => sub (GraphQL::Schema :$schema) { $schema.types.values.eager },
+    queryType => sub (GraphQL::Schema :$schema) { $schema.type() },
+    mutationType => sub (GraphQL::Schema :$schema)
+                        { $schema.type($schema.mutation) },
+    directives => sub (GraphQL::Schema :$schema) { die }
+},
 __Type => 
 {
-    name => sub (:$objectValue) { $objectValue.name },
-    
-    kind => sub (:$objectValue) { $objectValue.kind },
-
-    description => sub (:$objectValue) { $objectValue.description },
+    kind => &GetKind,
+    name => &GetName,
+    description => &GetDescription,
 
     fields => sub (:$objectValue, Bool :$includeDeprecated)
     {
@@ -33,25 +47,36 @@ __Type =>
         $objectValue.interfaces
     },
 
+    possibleTypes => sub (:$objectValue)
+    {
+        return unless $objectValue ~~ GraphQL::Interface | GraphQL::Union;
+        $objectValue.possibleTypes.keys
+    }
+
 },
 __Field =>
 {
-    name => sub (:$objectValue) { $objectValue.name },
-
-    description => sub (:$objectValue) { $objectValue.description },
-
-    args => sub (:$objectValue) { $objectValue.args },
-
-    type => sub (:$objectValue) { $objectValue.type },
-
-    isDeprecated => sub (:$objectValue) { $objectValue.isDeprecated },
-
-    deprecationReason => sub (:$objectValue) { $objectValue.deprecationReason }
+    name => &GetName,
+    description => &GetDescription,
+    args => &GetArgs,
+    type => &GetType,
+    isDeprecated => &GetIsDeprecated,
+    deprecationReason => &GetDeprecationReason
 },
 __InputValue =>
 {
-    name => sub (:$objectValue) { $objectValue.name }
-}
+    name => &GetName,
+    description => &GetDescription,
+    type => &GetType,
+    defaultValue => &GetDefaultValue    
+},
+__EnumValue =>
+{
+    name => &GetName,
+    description => &GetDescription,
+    isDeprecated => &GetIsDeprecated,
+    deprecationReason => &GetDeprecationReason
+},
 ;
 
 sub build-schema(Str $schemastring) returns GraphQL::Schema is export
@@ -94,7 +119,8 @@ sub build-schema(Str $schemastring) returns GraphQL::Schema is export
         name => '__schema',
         type => GraphQL::Non-Null.new(
             ofType => $schema.type('__Schema')
-        )
+        ),
+        resolver => sub (GraphQL::Schema :$schema) { $schema }
     );
 
     $schema.resolvers(%GraphQL-Introspection-Resolvers);

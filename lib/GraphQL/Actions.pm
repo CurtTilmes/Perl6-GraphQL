@@ -325,6 +325,7 @@ method TypeSchema($/)
             {
                 $field.value.type = $!s.types{$field.key}
             }
+
             when GraphQL::Non-Null | GraphQL::List
             {
                 $field.value.ofType = $!s.types{$field.key};
