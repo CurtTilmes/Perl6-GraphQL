@@ -101,6 +101,11 @@ method FragmentSpread($/)
 
 method InlineFragment($/)
 {
+    make GraphQL::InlineFragment.new(
+        onType => $<TypeCondition>.made,
+        directives => $<Directives>.made,
+        selectionset => $<SelectionSet>.made
+    );
 }
 
 method FragmentDefinition($/)

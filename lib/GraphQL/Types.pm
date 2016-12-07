@@ -329,6 +329,17 @@ class GraphQL::FragmentSpread
 
 class GraphQL::InlineFragment
 {
+    has Str $.onType;
+    has @.directives;
+    has @.selectionset;
+
+    method Str($indent = '')
+    {
+        "$indent..."
+            ~ (" on $.onType" if $.onType)
+            ~ " \{\n" ~ @!selectionset.map({.Str($indent ~ '  ')}).join('')
+            ~ $indent ~ "}\n"
+    }
 }
 
 class GraphQL::Document

@@ -306,6 +306,7 @@ sub CollectFields(GraphQL::Object :$objectType,
 
                 push $groupedFields{$selection.responseKey}, $selection;
             }
+
             when GraphQL::FragmentSpread
             {
                 my $fragmentSpreadName = $selection.name;
@@ -334,9 +335,30 @@ sub CollectFields(GraphQL::Object :$objectType,
                     push $groupedFields{$responseKey}, |@fragmentGroup;
                 }
             }
+
             when GraphQL::InlineFragment
             {
-                ...
+                my $fragmentType = $selection.onType;
+
+                next if $fragmentType.defined and
+                    not $objectType.fragment-applies($fragmentType);
+
+                my @fragmentSelectionSet = $selection.selectionset;
+
+                my $fragmentGroupedFieldSet = CollectFields(
+                    :$objectType,
+                    :selectionSet(@fragmentSelectionSet),
+                    :%variableValues,
+                    :$visitedFragments,
+                    :$document);
+                
+                for $fragmentGroupedFieldSet.kv -> $responseKey, @fragmentGroup
+                {
+                    $groupedFields{$responseKey} = []
+                        unless $groupedFields{$responseKey}:exists;
+
+                    push $groupedFields{$responseKey}, |@fragmentGroup;
+                }
             }
         }
     }
