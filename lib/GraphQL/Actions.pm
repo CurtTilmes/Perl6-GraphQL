@@ -243,7 +243,7 @@ method ObjectTypeDefinition($/)
     my $o = GraphQL::Object.new(name => $<Name>.made,
                                 fields => $<FieldDefinitionList>.made);
 
-    $!s.types{$<Name>.made} = $o;
+    $!s.type($<Name>.made, $o);
 
     if $<ImplementsDefinition>.made
     {
@@ -273,9 +273,9 @@ method UnionList($/)
 
 method EnumDefinition($/)
 {
-    $!s.types{$<Name>.made} =
+    $!s.type($<Name>.made,
         GraphQL::Enum.new(name => $<Name>.made,
-                          enumValues => $<EnumValues>.made);
+                          enumValues => $<EnumValues>.made));
 }
 
 method EnumValues($/)
@@ -317,18 +317,18 @@ method TypeSchema($/)
     #
     for @!fields-to-type -> $field
     {
-        die "Haven't defined $field.key()" unless $!s.types{$field.key};
+        die "Haven't defined $field.key()" unless $!s.type($field.key);
 
         given $field.value
         {
             when GraphQL::Field | GraphQL::InputValue
             {
-                $field.value.type = $!s.types{$field.key}
+                $field.value.type = $!s.type($field.key);
             }
 
             when GraphQL::Non-Null | GraphQL::List
             {
-                $field.value.ofType = $!s.types{$field.key};
+                $field.value.ofType = $!s.type($field.key);
             }
         }
     }
@@ -338,8 +338,8 @@ method TypeSchema($/)
         my @list-of-types;
         for $typelist.key -> $name
         {
-            die "Haven't defined interface $name" unless $!s.types{$name};
-            push @list-of-types, $!s.types{$name};
+            die "Haven't defined interface $name" unless $!s.type($name);
+            push @list-of-types, $!s.type($name);
         }
         
         given $typelist.value

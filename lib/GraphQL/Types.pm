@@ -66,6 +66,12 @@ class GraphQL::Interface is GraphQL::Type
     has GraphQL::FieldList $.fields;
     has Set $!possibleTypes;
 
+    method fields(Bool :$includeDeprecated)
+    {
+	$!fields.values.grep: {.name !~~ /^__/ and
+				   ($includeDeprecated or not .isDeprecated) }
+    }
+
     method possibleTypes(Set $possibleTypes?)
     {
 	$!possibleTypes = $possibleTypes if defined $possibleTypes;
@@ -86,6 +92,16 @@ class GraphQL::Object is GraphQL::Type
     has GraphQL::FieldList $.fields;
     has GraphQL::Interface @.interfaces is rw;
 
+    method addfield($field) { $!fields{$field.name} = $field; }
+
+    method field($fieldname) { $!fields{$fieldname} }
+
+    method fields(Bool :$includeDeprecated)
+    {
+	$!fields.values.grep: {.name !~~ /^__/ and
+				   ($includeDeprecated or not .isDeprecated) }
+    }
+    
     method Str
     {
         "type $.name " ~ 
@@ -208,6 +224,11 @@ class GraphQL::Enum is GraphQL::Scalar
     has Str $.kind = 'ENUM';
     has Set $.enumValues;
 
+    method enumValues(Bool :$includeDeprecated)
+    {
+	$!enumValues.keys.grep: {$includeDeprecated or not .isDeprecated}
+    }
+    
     method Str
     {
         "enum $.name \{\n" ~
@@ -330,7 +351,13 @@ class GraphQL::Schema
     has $.query is rw;
     has $.mutation is rw;
 
-    method type($type) { %!types{$type} }
+    method types { %!types.values }
+    
+    method type($type, $newvalue?)
+    {
+	%!types{$type} = $newvalue if $newvalue.defined;
+	return %!types{$type}
+    }
 
     method queryType { self.type($!query) }
 
@@ -371,9 +398,9 @@ class GraphQL::Schema
             for %obj.kv -> $field, $resolver
             {
                 die "Undefined field $field for $type"
-                    unless %!types{$type}.fields{$field};
+                    unless %!types{$type}.field($field);
 
-                %!types{$type}.fields{$field}.resolver = $resolver;
+                %!types{$type}.field($field).resolver = $resolver;
             }
             
         }

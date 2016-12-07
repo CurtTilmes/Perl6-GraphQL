@@ -8,34 +8,6 @@ use GraphQL::Actions;
 use GraphQL::Grammar;
 use GraphQL::Introspection;
 
-my %GraphQL-Introspection-Resolvers =
-
-__Schema =>
-{
-    types => sub (GraphQL::Schema :$schema) { $schema.types.values.eager },
-},
-
-__Type => 
-{
-    fields => sub (:$objectValue, Bool :$includeDeprecated)
-    {
-        return unless $objectValue ~~ GraphQL::Object | GraphQL::Interface;
-        $objectValue.fields.values
-                    .grep({.name !~~ /^__/ and
-                               ($includeDeprecated or not .isDeprecated) })
-                    .eager
-    },
-
-    enumValues => sub (:$objectValue, :$includeDeprecated)
-    {
-        return unless $objectValue ~~ GraphQL::Enum;
-        $objectValue.enumValues.keys
-                    .grep({$includeDeprecated or not .isDeprecated}).eager
-    },
-
-}
-;
-
 sub build-schema(Str $schemastring) returns GraphQL::Schema is export
 {
     # First add Introspection types
@@ -60,7 +32,7 @@ sub build-schema(Str $schemastring) returns GraphQL::Schema is export
 
     # Then add meta-fields __schema and __type to the root type
 
-    $schema.queryType.fields<__type> = GraphQL::Field.new(
+    $schema.queryType.addfield(GraphQL::Field.new(
         name => '__type',
         type => $schema.type('__Type'),
         args => [ GraphQL::InputValue.new(
@@ -70,19 +42,15 @@ sub build-schema(Str $schemastring) returns GraphQL::Schema is export
                       )
                   ) ],
         resolver => sub (:$name, :$schema) { $schema.type($name) }
-    );
+    ));
 
-    $schema.queryType.fields<__schema> = GraphQL::Field.new(
+    $schema.queryType.addfield(GraphQL::Field.new(
         name => '__schema',
         type => GraphQL::Non-Null.new(
             ofType => $schema.type('__Schema')
         ),
         resolver => sub (GraphQL::Schema :$schema) { $schema }
-    );
-
-    # Then add introspection resolvers
-
-    $schema.resolvers(%GraphQL-Introspection-Resolvers);
+    ));
 
     return $schema;
 }
@@ -177,7 +145,7 @@ sub ExecuteSelectionSet(:@selectionSet,
         }
         else
         {
-            my $fieldType = $objectType.fields{$fieldName}.type or next;
+            my $fieldType = $objectType.field($fieldName).type or next;
 
             $responseValue = ExecuteField(:$objectType, 
                                           :$objectValue,
@@ -206,7 +174,7 @@ sub ExecuteField(GraphQL::Object :$objectType,
                                               :$field,
                                               :%variableValues);
 
-    my $resolvedValue = $objectType.fields{$field.name}
+    my $resolvedValue = $objectType.field($field.name)
                                    .resolve(:$objectValue,
                                             :%argumentValues,
                                             :$schema);
@@ -244,7 +212,7 @@ sub CompleteValue(GraphQL::Type :$fieldType,
 
         when GraphQL::List
         {
-            die "Must return a List" unless $result ~~ List;
+            die "Must return a List" unless $result ~~ List | Seq;
 
             return $result.map({CompleteValue(:fieldType($fieldType.ofType),
                                               :@fields,
@@ -308,7 +276,7 @@ sub CoerceArgumentValues(GraphQL::Object :$objectType,
 {
     my %coercedValues;
 
-    for $objectType.fields{$field.name}.args -> $arg
+    for $objectType.field($field.name).args -> $arg
     {
         # ...if $field.args{$arg.name} is a variable, resolve it first
         
