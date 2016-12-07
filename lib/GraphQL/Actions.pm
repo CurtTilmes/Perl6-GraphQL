@@ -200,9 +200,8 @@ method NonNullType($/)
 
 method InterfaceDefinition($/)
 {
-    make $!s.types{$<Name>.made} =
-        GraphQL::Interface.new(name => $<Name>.made,
-                               fields => $<FieldDefinitionList>.made);
+    make $!s.addtype(GraphQL::Interface.new(name => $<Name>.made,
+                         fields => $<FieldDefinitionList>.made));
 }
 
 method FieldDefinitionList($/)
@@ -243,7 +242,7 @@ method ObjectTypeDefinition($/)
     my $o = GraphQL::Object.new(name => $<Name>.made,
                                 fields => $<FieldDefinitionList>.made);
 
-    $!s.type($<Name>.made, $o);
+    $!s.addtype($o);
 
     if $<ImplementsDefinition>.made
     {
@@ -261,7 +260,7 @@ method UnionDefinition($/)
 {
     my $u = GraphQL::Union.new(name => $<Name>.made);
 
-    $!s.types{$<Name>.made} = $u;
+    $!s.addtype($u);
 
     push @!lists-to-type, ($<UnionList>.made => $u);
 }
@@ -273,9 +272,8 @@ method UnionList($/)
 
 method EnumDefinition($/)
 {
-    $!s.type($<Name>.made,
-        GraphQL::Enum.new(name => $<Name>.made,
-                          enumValues => $<EnumValues>.made));
+    $!s.addtype(GraphQL::Enum.new(name => $<Name>.made,
+				  enumValues => $<EnumValues>.made));
 }
 
 method EnumValues($/)
@@ -305,7 +303,7 @@ method ArgumentDefinitions($/)
 
 method ScalarDefinition($/)
 {
-    $!s.types{$<Name>.made} = GraphQL::Scalar.new(name => $<Name>.made);
+    $!s.addtype(GraphQL::Scalar.new(name => $<Name>.made));
 }
 
 method TypeSchema($/)

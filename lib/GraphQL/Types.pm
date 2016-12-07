@@ -352,16 +352,17 @@ class GraphQL::Schema
     has $.mutation is rw;
 
     method types { %!types.values }
-    
-    method type($type, $newvalue?)
+
+    method addtype(GraphQL::Type $newtype)
     {
-	%!types{$type} = $newvalue if $newvalue.defined;
-	return %!types{$type}
+	%!types{$newtype.name} = $newtype
     }
 
-    method queryType { self.type($!query) }
+    method type($typename) { %!types{$typename} }
 
-    method mutationType { self.type($!mutation) }
+    method queryType { %!types{$!query} }
+
+    method mutationType { %!types{$!mutation} }
 
     method directives { die "No directives in schema yet" }
 
