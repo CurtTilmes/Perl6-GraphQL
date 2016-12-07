@@ -96,6 +96,12 @@ class GraphQL::Object is GraphQL::Type
 				   ($includeDeprecated or not .isDeprecated) }
     }
     
+    method fragment-applies($fragmentType)
+    {
+        return True if $fragmentType eq $.name;
+        die "Check FragmentType in interfaces";
+    }
+
     method Str
     {
         "type $.name " ~ 
@@ -267,7 +273,7 @@ class GraphQL::Operation
     method Str
     {
         ("$.operation $.name " if $.name) ~ "\{\n" ~
-            @.selectionset.map({.Str('  ')}).join("\n") ~
+            @.selectionset.map({.Str('  ')}).join('') ~
         "}\n"
     }
 }
@@ -301,12 +307,24 @@ class GraphQL::Fragment
     has Str $.onType;
     has @.directives;
     has @.selectionset;
+
+    method Str($indent = '')
+    {
+        "fragment $.name on $.onType" ~
+            ( " \{\n" ~ @!selectionset.map({.Str($indent ~ '  ')}).join('') ~
+              $indent ~ '}' if @!selectionset)
+    }
 }
 
 class GraphQL::FragmentSpread
 {
     has Str $.name;
     has @.directives;
+
+    method Str($indent = '')
+    {
+        "$indent... $.name\n"
+    }
 }
 
 class GraphQL::InlineFragment
@@ -334,8 +352,9 @@ class GraphQL::Document
 
     method Str
     {
-        %.operations.values.map({.Str}).join("\n") ~
-        %.fragments.values.map({.Str}).join("\n") ~ "\n";
+        (%.operations.values.map({.Str}).join("\n"),
+         %.fragments.values.map({.Str}).join("\n")).join("\n")
+        ~ "\n";
     }
 }
 

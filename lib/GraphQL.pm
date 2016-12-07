@@ -55,7 +55,7 @@ sub build-schema(Str $schemastring) returns GraphQL::Schema is export
     return $schema;
 }
 
-sub parse-query(Str $query) returns GraphQL::Document is export
+sub parse-document(Str $query) returns GraphQL::Document is export
 {
     GraphQL::Grammar.parse($query,
                            actions => GraphQL::Actions.new,
@@ -66,12 +66,12 @@ sub parse-query(Str $query) returns GraphQL::Document is export
 }
 
 sub ExecuteRequest(GraphQL::Schema :$schema,
-                   GraphQL::Document :$query,
+                   GraphQL::Document :$document,
                    Str :$operationName,
                    :%variableValues,
                    :$initialValue) is export
 {
-    my $operation = $query.GetOperation($operationName);
+    my $operation = $document.GetOperation($operationName);
 
     my %coercedVariableValues = CoerceVariableValues(:$schema,
                                                      :$operation,
@@ -84,7 +84,8 @@ sub ExecuteRequest(GraphQL::Schema :$schema,
             return ExecuteQuery(:$operation,
                                 :$schema,
                                 variableValues => %coercedVariableValues,
-                                :$initialValue);
+                                :$initialValue,
+                                :$document);
         }
         when 'mutation'
         {
@@ -106,13 +107,15 @@ sub CoerceVariableValues(GraphQL::Schema :$schema,
 
 sub ExecuteQuery(GraphQL::Operation :$operation,
                  GraphQL::Schema :$schema,
+                 GraphQL::Document :$document,
                  :%variableValues,
                  :$initialValue)
 {
     my $data = ExecuteSelectionSet(selectionSet => $operation.selectionset,
                                    objectType => $schema.queryType,
                                    objectValue => $initialValue,
-                                   :%variableValues);
+                                   :%variableValues,
+                                   :$document);
 
     return %(
         data => $data
@@ -123,11 +126,13 @@ sub ExecuteQuery(GraphQL::Operation :$operation,
 sub ExecuteSelectionSet(:@selectionSet,
                         GraphQL::Object :$objectType,
                         :$objectValue,
-                        :%variableValues)
+                        :%variableValues,
+                        GraphQL::Document :$document)
 {
     my $groupedFieldSet = CollectFields(:$objectType,
                                         :@selectionSet,
-                                        :%variableValues);
+                                        :%variableValues,
+                                        :$document);
 
     my $resultMap = Hash::Ordered.new;
 
@@ -283,13 +288,14 @@ sub CoerceArgumentValues(GraphQL::Object :$objectType,
 sub CollectFields(GraphQL::Object :$objectType,
                   :@selectionSet,
                   :%variableValues,
-                  :$visitedFragments = set())
+                  :$visitedFragments = set(),
+                  GraphQL::Document :$document)
 {
     my $groupedFields = Hash::Ordered.new;
 
     for @selectionSet -> $selection
     {
-        ... if $selection.directives;
+#        ... if $selection.directives;
 
         given $selection
         {
@@ -302,7 +308,31 @@ sub CollectFields(GraphQL::Object :$objectType,
             }
             when GraphQL::FragmentSpread
             {
-                ...
+                my $fragmentSpreadName = $selection.name;
+
+                next if $fragmentSpreadName ∈ $visitedFragments;
+
+                my $fragment = $document.fragments{$fragmentSpreadName} or next;
+
+                my $fragmentType = $fragment.onType;
+
+                next unless $objectType.fragment-applies($fragmentType);
+
+                my @fragmentSelectionSet = $fragment.selectionset;
+
+                my $fragmentGroupedFieldSet = CollectFields(
+                    :$objectType,
+                    :selectionSet(@fragmentSelectionSet),
+                    :%variableValues,
+                    :$visitedFragments,
+                    :$document);
+
+                for $fragmentGroupedFieldSet.kv -> $responseKey, @fragmentGroup
+                {
+                    $groupedFields{$responseKey} = []
+                        unless $groupedFields{$responseKey}:exists;
+                    push $groupedFields{$responseKey}, |@fragmentGroup;
+                }
             }
             when GraphQL::InlineFragment
             {
