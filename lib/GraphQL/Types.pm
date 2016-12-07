@@ -64,7 +64,13 @@ class GraphQL::Interface is GraphQL::Type
 {
     has Str $.kind = 'INTERFACE';
     has GraphQL::FieldList $.fields;
-    has Set $.possibleTypes is rw;
+    has Set $!possibleTypes;
+
+    method possibleTypes(Set $possibleTypes?)
+    {
+	$!possibleTypes = $possibleTypes if defined $possibleTypes;
+	$!possibleTypes.keys
+    }
 
     method Str
     {
@@ -122,7 +128,9 @@ class GraphQL::Field is GraphQL::Type
     {
         unless $!resolver.defined
 	{
-	    say "No resolver, trying default";
+	    return $objectValue."$.name"() if $objectValue.^can($.name);
+
+	    die "No resolver for $objectValue.name(), $.name()";
 	}
 
         #
@@ -171,7 +179,13 @@ class GraphQL::Field is GraphQL::Type
 class GraphQL::Union is GraphQL::Type
 {
     has $.kind = 'UNION';
-    has Set $.possibleTypes is rw;
+    has Set $!possibleTypes;
+
+    method possibleTypes(Set $possibleTypes?)
+    {
+	$!possibleTypes = $possibleTypes if defined $possibleTypes;
+	$!possibleTypes.keys
+    }
 
     method Str
     {
@@ -315,11 +329,16 @@ class GraphQL::Schema
     has %.types;
     has $.query is rw;
     has $.mutation is rw;
-    has $.subscription is rw;
 
-    method type($query = $!query) { %!types{$query} }
+    method type($type) { %!types{$type} }
 
-    method BUILD(:%types, :$!query = 'Query', :$!mutation, :$!subscription)
+    method queryType { self.type($!query) }
+
+    method mutationType { self.type($!mutation) }
+
+    method directives { die "No directives in schema yet" }
+
+    method BUILD(:%types, :$!query = 'Query', :$!mutation)
     {
         %!types = %defaultTypes, %types;
     }
@@ -334,7 +353,10 @@ class GraphQL::Schema
             $str ~= $type.Str ~ "\n";
         }
 
-        $str ~= "schema \{\n  query: $.query\n}\n";
+        $str ~= "schema \{\n";
+	$str ~= "  query: $!query\n";
+        $str ~= "  mutation: $!mutation\n" if $!mutation;
+	$str ~= "}\n";
     }
 
     #

@@ -8,32 +8,15 @@ use GraphQL::Actions;
 use GraphQL::Grammar;
 use GraphQL::Introspection;
 
-sub GetName(:$objectValue)              { $objectValue.name }
-sub GetKind(:$objectValue)              { $objectValue.kind }
-sub GetDescription(:$objectValue)       { $objectValue.description }
-sub GetArgs(:$objectValue)              { $objectValue.args }
-sub GetType(:$objectValue)              { $objectValue.type }
-sub GetIsDeprecated(:$objectValue)      { $objectValue.isDeprecated }
-sub GetDeprecationReason(:$objectValue) { $objectValue.deprecationReason }
-sub GetDefaultValue(:$objectValue)      { $objectValue.defaultValue }
-
 my %GraphQL-Introspection-Resolvers =
 
 __Schema =>
 {
     types => sub (GraphQL::Schema :$schema) { $schema.types.values.eager },
-    queryType => sub (GraphQL::Schema :$schema) { $schema.type() },
-    mutationType => sub (GraphQL::Schema :$schema)
-                        { $schema.type($schema.mutation) },
-    directives => sub (GraphQL::Schema :$schema) { die }
 },
 
 __Type => 
 {
-    kind => &GetKind,
-    name => &GetName,
-    description => &GetDescription,
-
     fields => sub (:$objectValue, Bool :$includeDeprecated)
     {
         return unless $objectValue ~~ GraphQL::Object | GraphQL::Interface;
@@ -43,18 +26,6 @@ __Type =>
                     .eager
     },
 
-    interfaces => sub (:$objectValue)
-    {
-        return unless $objectValue ~~ GraphQL::Object;
-        $objectValue.interfaces
-    },
-
-    possibleTypes => sub (:$objectValue)
-    {
-        return unless $objectValue ~~ GraphQL::Interface | GraphQL::Union;
-        $objectValue.possibleTypes.keys
-    },
-
     enumValues => sub (:$objectValue, :$includeDeprecated)
     {
         return unless $objectValue ~~ GraphQL::Enum;
@@ -62,49 +33,8 @@ __Type =>
                     .grep({$includeDeprecated or not .isDeprecated}).eager
     },
 
-    ofType => sub (:$objectValue)
-    { 
-        return unless $objectValue ~~ GraphQL::Non-Null | GraphQL::List;
-        $objectValue.ofType
-    }
-},
-
-__Field =>
-{
-    name => &GetName,
-    description => &GetDescription,
-    args => &GetArgs,
-    type => &GetType,
-    isDeprecated => &GetIsDeprecated,
-    deprecationReason => &GetDeprecationReason
-},
-
-__InputValue =>
-{
-    name => &GetName,
-    description => &GetDescription,
-    type => &GetType,
-    defaultValue => &GetDefaultValue    
-},
-
-__EnumValue =>
-{
-    name => &GetName,
-    description => &GetDescription,
-    isDeprecated => &GetIsDeprecated,
-    deprecationReason => &GetDeprecationReason
-},
-
-__Directive => 
-{
-    name => &GetName,
-    description => &GetDescription,
-    locations => sub (GraphQL::Directive :$objectValue)
-    {
-        $objectValue.locations
-    },
-    args => &GetArgs
-};
+}
+;
 
 sub build-schema(Str $schemastring) returns GraphQL::Schema is export
 {
@@ -126,11 +56,11 @@ sub build-schema(Str $schemastring) returns GraphQL::Schema is export
         or die "Failed to parse schema";
 
     die "Missing root query type $schema.query()" 
-        unless $schema.type() and $schema.type().kind ~~ 'OBJECT';
+        unless $schema.queryType and $schema.queryType.kind ~~ 'OBJECT';
 
     # Then add meta-fields __schema and __type to the root type
 
-    $schema.type().fields<__type> = GraphQL::Field.new(
+    $schema.queryType.fields<__type> = GraphQL::Field.new(
         name => '__type',
         type => $schema.type('__Type'),
         args => [ GraphQL::InputValue.new(
@@ -142,7 +72,7 @@ sub build-schema(Str $schemastring) returns GraphQL::Schema is export
         resolver => sub (:$name, :$schema) { $schema.type($name) }
     );
 
-    $schema.type().fields<__schema> = GraphQL::Field.new(
+    $schema.queryType.fields<__schema> = GraphQL::Field.new(
         name => '__schema',
         type => GraphQL::Non-Null.new(
             ofType => $schema.type('__Schema')
@@ -212,7 +142,7 @@ sub ExecuteQuery(GraphQL::Operation :$operation,
                  :$initialValue)
 {
     my $data = ExecuteSelectionSet(selectionSet => $operation.selectionset,
-                                   objectType => $schema.type,
+                                   objectType => $schema.queryType,
                                    objectValue => $initialValue,
                                    :%variableValues,
                                    :$schema);
@@ -247,10 +177,6 @@ sub ExecuteSelectionSet(:@selectionSet,
         }
         else
         {
-            say $objectType.name;
-            say $objectType.Str;
-            say $fieldName;
-            
             my $fieldType = $objectType.fields{$fieldName}.type or next;
 
             $responseValue = ExecuteField(:$objectType, 

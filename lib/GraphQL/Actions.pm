@@ -350,7 +350,7 @@ method TypeSchema($/)
             }
             when GraphQL::Union
             {
-                $typelist.value.possibleTypes = set @list-of-types
+                $typelist.value.possibleTypes(set @list-of-types);
             }
         }
     }
