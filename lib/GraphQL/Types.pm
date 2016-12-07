@@ -64,18 +64,12 @@ class GraphQL::Interface is GraphQL::Type
 {
     has Str $.kind = 'INTERFACE';
     has GraphQL::FieldList $.fields;
-    has Set $!possibleTypes;
+    has GraphQL::Type @.possibleTypes;
 
     method fields(Bool :$includeDeprecated)
     {
 	$!fields.values.grep: {.name !~~ /^__/ and
 				   ($includeDeprecated or not .isDeprecated) }
-    }
-
-    method possibleTypes(Set $possibleTypes?)
-    {
-	$!possibleTypes = $possibleTypes if defined $possibleTypes;
-	$!possibleTypes.keys
     }
 
     method Str
@@ -105,7 +99,7 @@ class GraphQL::Object is GraphQL::Type
     method Str
     {
         "type $.name " ~ 
-            ('implements ' ~ @.interfaces.map({.name}).join(', ') ~ ' '
+            ('implements ' ~ (@!interfaces».name).join(', ') ~ ' '
                 if @.interfaces)
         ~ "\{\n" ~
         $.fields.values.grep({.name !~~ /^__/}).map({'  ' ~ .Str}).join("\n")
@@ -190,18 +184,12 @@ class GraphQL::Field is GraphQL::Type
 class GraphQL::Union is GraphQL::Type
 {
     has $.kind = 'UNION';
-    has Set $!possibleTypes;
-
-    method possibleTypes(Set $possibleTypes?)
-    {
-	$!possibleTypes = $possibleTypes if defined $possibleTypes;
-	$!possibleTypes.keys
-    }
+    has GraphQL::Type @.possibleTypes;
 
     method Str
     {
         "union $.name = "
-            ~ $.possibleTypes.keys.map({ $_.name }).join(' | ')
+            ~ (@!possibleTypes».name).join(' | ')
             ~ "\n"
     }
 }
@@ -217,17 +205,17 @@ class GraphQL::EnumValue is GraphQL::Scalar
 class GraphQL::Enum is GraphQL::Scalar
 {
     has Str $.kind = 'ENUM';
-    has Set $.enumValues;
+    has GraphQL::EnumValue @.enumValues;
 
     method enumValues(Bool :$includeDeprecated)
     {
-	$!enumValues.keys.grep: {$includeDeprecated or not .isDeprecated}
+	@!enumValues.grep: {$includeDeprecated or not .isDeprecated}
     }
     
     method Str
     {
         "enum $.name \{\n" ~
-            $.enumValues.keys.map({ "  $_.Str()"}).join("\n") ~
+            @!enumValues.map({ "  $_.Str()"}).join("\n") ~
         "\n}\n";
     }
 }

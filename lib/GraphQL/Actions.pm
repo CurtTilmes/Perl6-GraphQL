@@ -18,8 +18,8 @@ has @!fields-to-type;  # These types have a single type
 #            or GraphQL::Non-Null or GraphQL::List    (set $.ofType)
 
 has @!lists-to-type;   # These take lists of types
-# ('list', 'of', 'typenames') => GraphQL::Object (set $.interfaces)
-#                             or GraphQL::Union  (set $.possibleTypes)
+# ('list', 'of', 'typenames') => GraphQL::Object (@.interfaces)
+#                             or GraphQL::Union  (@.possibleTypes)
 
 #
 # Returns this (in .made) when making a <Document>
@@ -239,6 +239,10 @@ method FieldDefinition($/)
 
 method ObjectTypeDefinition($/)
 {
+#    say '-' x 70;
+#    say "Making Object";
+#    say $/;
+    
     my $o = GraphQL::Object.new(name => $<Name>.made,
                                 fields => $<FieldDefinitionList>.made);
 
@@ -278,7 +282,7 @@ method EnumDefinition($/)
 
 method EnumValues($/)
 {
-    make set $<Name>.map({ GraphQL::EnumValue.new(name => $_.made) });
+    make $<Name>.map({ GraphQL::EnumValue.new(name => $_.made) });
 }
 
 method DefaultValue($/)
@@ -348,7 +352,7 @@ method TypeSchema($/)
             }
             when GraphQL::Union
             {
-                $typelist.value.possibleTypes(set @list-of-types);
+                $typelist.value.possibleTypes = @list-of-types;
             }
         }
     }

@@ -5,7 +5,7 @@ unit grammar GraphQL::Grammar;
 token SourceCharacter { <[\x[0009]\x[000A]\x[000D]\x[0020]..\x[FFFF]]> }
 
 token Ignored
-{ [ <UnicodeBOM> | <WhiteSpace> | <LineTerminator> | <Comment> | <Comma> ] }
+{ <UnicodeBOM> | <WhiteSpace> | <LineTerminator> | <Comma> | <Comment> }
 
 token UnicodeBOM { \x[FEFF] }
 
