@@ -387,9 +387,9 @@ class GraphQL::Document
 
 class GraphQL::Schema
 {
-    has %.types;
-    has $.query is rw;
-    has $.mutation is rw;
+    has GraphQL::Type %!types = %defaultTypes;
+    has Str $.query is rw = 'Query';
+    has Str $.mutation is rw;
 
     method types { %!types.values }
 
@@ -400,16 +400,11 @@ class GraphQL::Schema
 
     method type($typename) { %!types{$typename} }
 
-    method queryType { %!types{$!query} }
+    method queryType returns GraphQL::Object { %!types{$!query} }
 
-    method mutationType { %!types{$!mutation} }
+    method mutationType returns GraphQL::Object { %!types{$!mutation} }
 
     method directives { die "No directives in schema yet" }
-
-    method BUILD(:%types, :$!query = 'Query', :$!mutation)
-    {
-        %!types = %defaultTypes, %types;
-    }
 
     method Str
     {

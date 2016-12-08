@@ -28,8 +28,9 @@ has GraphQL::Document $!q = GraphQL::Document.new;
 
 #
 # Returns this (in .made) when making a <TypeSchema>
+# Supply an existing schema to just add more types to it
 #
-has GraphQL::Schema $!s = GraphQL::Schema.new;
+has GraphQL::Schema $.schema = GraphQL::Schema.new;
 
 method Document($/)
 {
@@ -210,7 +211,7 @@ method InterfaceDefinition($/)
 
     $i.add-comment-description($/);
 
-    $!s.addtype($i);
+    $!schema.addtype($i);
 }
 
 method FieldDefinitionList($/)
@@ -270,7 +271,7 @@ method ObjectTypeDefinition($/)
 
     $o.add-comment-description($/);
 
-    $!s.addtype($o);
+    $!schema.addtype($o);
 
     if $<ImplementsDefinition>.made
     {
@@ -290,7 +291,7 @@ method UnionDefinition($/)
 
     $u.add-comment-description($/);
 
-    $!s.addtype($u);
+    $!schema.addtype($u);
 
     push @!lists-to-type, ($<UnionList>.made => $u);
 }
@@ -308,7 +309,7 @@ method EnumDefinition($/)
     $e.add-comment-description($/);
 
 
-    $!s.addtype($e);
+    $!schema.addtype($e);
 }
 
 method EnumValues($/)
@@ -372,7 +373,7 @@ method ScalarDefinition($/)
 
     $o.add-comment-description($/);
 
-    $!s.addtype($o);
+    $!schema.addtype($o);
 }
 
 method TypeSchema($/)
@@ -384,18 +385,18 @@ method TypeSchema($/)
     #
     for @!fields-to-type -> $field
     {
-        die "Haven't defined $field.key()" unless $!s.type($field.key);
+        die "Haven't defined $field.key()" unless $!schema.type($field.key);
 
         given $field.value
         {
             when GraphQL::Field | GraphQL::InputValue
             {
-                $field.value.type = $!s.type($field.key);
+                $field.value.type = $!schema.type($field.key);
             }
 
             when GraphQL::Non-Null | GraphQL::List
             {
-                $field.value.ofType = $!s.type($field.key);
+                $field.value.ofType = $!schema.type($field.key);
             }
         }
     }
@@ -405,8 +406,8 @@ method TypeSchema($/)
         my @list-of-types;
         for $typelist.key -> $name
         {
-            die "Haven't defined interface $name" unless $!s.type($name);
-            push @list-of-types, $!s.type($name);
+            die "Haven't defined interface $name" unless $!schema.type($name);
+            push @list-of-types, $!schema.type($name);
         }
         
         given $typelist.value
@@ -422,12 +423,12 @@ method TypeSchema($/)
         }
     }
 
-    make $!s;
+    make $!schema;
 }
 
 method SchemaDefinition($/)
 {
-    $!s.query = $<SchemaQuery>.made;
+    $!schema.query = $<SchemaQuery>.made;
 }
 
 method SchemaQuery($/)

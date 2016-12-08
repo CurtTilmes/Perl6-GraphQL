@@ -13,20 +13,38 @@ type Query {
   hello: String
 }
 >>,
-GraphQL::Schema.new(
-    types =>
-    {
-        'Query' =>
-            GraphQL::Object.new(
-                name => 'Query',
-                fields => GraphQL::FieldList.new(
-                    'hello', GraphQL::Field.new(
-                        name => 'hello',
-                        type => $GraphQLString
-                    )
-                )
+graphql-schema(
+    GraphQL::Object.new(
+        name => 'Query',
+        fields => GraphQL::FieldList.new(
+            'hello', GraphQL::Field.new(
+                name => 'hello',
+                type => $GraphQLString
             )
-    }
+        )
+    )
+),
+#----------------------------------------------------------------------
+'Comments for description field',
+Q<<
+# Query description
+type Query {
+# field description for hello
+  hello: String
+}
+>>,
+graphql-schema(
+    GraphQL::Object.new(
+        name => 'Query',
+        description => 'Query description',
+        fields => GraphQL::FieldList.new(
+            'hello', GraphQL::Field.new(
+                name => 'hello',
+                description => 'field description for hello',
+                type => $GraphQLString
+            )
+        )
+    )
 ),
 #----------------------------------------------------------------------
 'Non-null',
@@ -35,20 +53,16 @@ type Query {
   hello: String!
 }
 >>,
-GraphQL::Schema.new(
-    types =>
-    {
-        'Query' =>
-            GraphQL::Object.new(
-                name => 'Query',
-                fields => GraphQL::FieldList.new(
-                    'hello', GraphQL::Field.new(
-                        name => 'hello',
-                        type => GraphQL::Non-Null.new(ofType => $GraphQLString)
-                    )
-                )
+graphql-schema(
+    GraphQL::Object.new(
+        name => 'Query',
+        fields => GraphQL::FieldList.new(
+            'hello', GraphQL::Field.new(
+                name => 'hello',
+                type => GraphQL::Non-Null.new(ofType => $GraphQLString)
             )
-    }
+        )
+    )
 ),
 #----------------------------------------------------------------------
 'List of String',
@@ -57,20 +71,16 @@ type Query {
   hello: [String]
 }
 >>,
-GraphQL::Schema.new(
-    types =>
-    {
-        'Query' =>
-            GraphQL::Object.new(
-                name => 'Query',
-                fields => GraphQL::FieldList.new(
-                    'hello', GraphQL::Field.new(
-                        name => 'hello',
-                        type => GraphQL::List.new(ofType => $GraphQLString)
-                    )
-                )
+graphql-schema(
+    GraphQL::Object.new(
+        name => 'Query',
+        fields => GraphQL::FieldList.new(
+            'hello', GraphQL::Field.new(
+                name => 'hello',
+                type => GraphQL::List.new(ofType => $GraphQLString)
             )
-    }
+        )
+    )
 ),
 #----------------------------------------------------------------------
 'Non-null List of Non-null String',
@@ -79,25 +89,21 @@ type Query {
   hello: [String!]!
 }
 >>,
-GraphQL::Schema.new(
-    types =>
-    {
-        'Query' =>
-            GraphQL::Object.new(
-                name => 'Query',
-                fields => GraphQL::FieldList.new(
-                    'hello', GraphQL::Field.new(
-                        name => 'hello',
-                        type => GraphQL::Non-Null.new(
-                            ofType => GraphQL::List.new(
-                                ofType => GraphQL::Non-Null.new(
-                                    ofType => $GraphQLString)
-                            )
-                        )
+graphql-schema(
+    GraphQL::Object.new(
+        name => 'Query',
+        fields => GraphQL::FieldList.new(
+            'hello', GraphQL::Field.new(
+                name => 'hello',
+                type => GraphQL::Non-Null.new(
+                    ofType => GraphQL::List.new(
+                        ofType => GraphQL::Non-Null.new(
+                            ofType => $GraphQLString)
                     )
                 )
             )
-    }
+        )
+    )
 ),
 #----------------------------------------------------------------------
 'Arguments with various scalar types',
@@ -110,37 +116,33 @@ type Query {
     is_active: Boolean
 }
 >>,
-GraphQL::Schema.new(
-    types =>
-    {
-        'Query' =>
-            GraphQL::Object.new(
-                name => 'Query',
-                fields => GraphQL::FieldList.new(
-                    'id', GraphQL::Field.new(
-                        name => 'id',
-                        type => GraphQL::Non-Null.new(
-                            ofType => $GraphQLID)
-                    ),
-                    'name', GraphQL::Field.new(
-                        name => 'name',
-                        type => $GraphQLString
-                    ),
-                    'age', GraphQL::Field.new(
-                        name => 'age',
-                        type => $GraphQLInt
-                    ),
-                    'balance', GraphQL::Field.new(
-                        name => 'balance',
-                        type => $GraphQLFloat
-                    ),
-                    'is_active', GraphQL::Field.new(
-                        name => 'is_active',
-                        type => $GraphQLBoolean
-                    )
-                )
+graphql-schema(
+    GraphQL::Object.new(
+        name => 'Query',
+        fields => GraphQL::FieldList.new(
+            'id', GraphQL::Field.new(
+                name => 'id',
+                type => GraphQL::Non-Null.new(
+                    ofType => $GraphQLID)
+            ),
+            'name', GraphQL::Field.new(
+                name => 'name',
+                type => $GraphQLString
+            ),
+            'age', GraphQL::Field.new(
+                name => 'age',
+                type => $GraphQLInt
+            ),
+            'balance', GraphQL::Field.new(
+                name => 'balance',
+                type => $GraphQLFloat
+            ),
+            'is_active', GraphQL::Field.new(
+                name => 'is_active',
+                type => $GraphQLBoolean
             )
-    }
+        )
+    )
 ),
 #----------------------------------------------------------------------
 'Field with argument',
@@ -149,27 +151,23 @@ type Query {
   hello(limit: Int): String
 }
 >>,
-GraphQL::Schema.new(
-    types =>
-    {
-        'Query' =>
-            GraphQL::Object.new(
-                name => 'Query',
-                fields => GraphQL::FieldList.new(
-                    'hello', GraphQL::Field.new(
-                        name => 'hello',
-                        type => $GraphQLString,
-                        args =>
-                        [
-                             GraphQL::InputValue.new(
-                                 name => 'limit',
-                                 type => $GraphQLInt
-                             )
-                        ]
-                    )
-                )
+graphql-schema(
+    GraphQL::Object.new(
+        name => 'Query',
+        fields => GraphQL::FieldList.new(
+            'hello', GraphQL::Field.new(
+                name => 'hello',
+                type => $GraphQLString,
+                args =>
+                [
+                 GraphQL::InputValue.new(
+                     name => 'limit',
+                     type => $GraphQLInt
+                 )
+                ]
             )
-    }
+        )
+    )
 ),
 #----------------------------------------------------------------------
 'Field with argument with default value',
@@ -178,28 +176,24 @@ type Query {
   hello(limit: Int = 10): String
 }
 >>,
-GraphQL::Schema.new(
-    types =>
-    {
-        'Query' =>
-            GraphQL::Object.new(
-                name => 'Query',
-                fields => GraphQL::FieldList.new(
-                    'hello', GraphQL::Field.new(
-                        name => 'hello',
-                        type => $GraphQLString,
-                        args =>
-                        [
-                             GraphQL::InputValue.new(
-                                 name => 'limit',
-                                 type => $GraphQLInt,
-                                 defaultValue => 10
-                             )
-                        ]
-                    )
-                )
+graphql-schema(
+    GraphQL::Object.new(
+        name => 'Query',
+        fields => GraphQL::FieldList.new(
+            'hello', GraphQL::Field.new(
+                name => 'hello',
+                type => $GraphQLString,
+                args =>
+                [
+                 GraphQL::InputValue.new(
+                     name => 'limit',
+                     type => $GraphQLInt,
+                     defaultValue => 10
+                 )
+                ]
             )
-    }
+        )
+    )
 ),
 #----------------------------------------------------------------------
 'Field with arguments of various types',
@@ -208,43 +202,39 @@ type Query {
   hello(id: ID, first: Int, x: Float, cond: Boolean, person: String): String
 }
 >>,
-GraphQL::Schema.new(
-    types =>
-    {
-        'Query' =>
-            GraphQL::Object.new(
-                name => 'Query',
-                fields => GraphQL::FieldList.new(
-                    'hello', GraphQL::Field.new(
-                        name => 'hello',
-                        type => $GraphQLString,
-                        args =>
-                        [
-                             GraphQL::InputValue.new(
-                                 name => 'id',
-                                 type => $GraphQLID
-                             ),
-                             GraphQL::InputValue.new(
-                                 name => 'first',
-                                 type => $GraphQLInt
-                             ),
-                             GraphQL::InputValue.new(
-                                 name => 'x',
-                                 type => $GraphQLFloat
-                             ),
-                             GraphQL::InputValue.new(
-                                 name => 'cond',
-                                 type => $GraphQLBoolean
-                             ),
-                             GraphQL::InputValue.new(
-                                 name => 'person',
-                                 type => $GraphQLString
-                             )
-                        ]
-                    )
-                )
+graphql-schema(
+    GraphQL::Object.new(
+        name => 'Query',
+        fields => GraphQL::FieldList.new(
+            'hello', GraphQL::Field.new(
+                name => 'hello',
+                type => $GraphQLString,
+                args =>
+                [
+                 GraphQL::InputValue.new(
+                     name => 'id',
+                     type => $GraphQLID
+                 ),
+                 GraphQL::InputValue.new(
+                     name => 'first',
+                     type => $GraphQLInt
+                 ),
+                 GraphQL::InputValue.new(
+                     name => 'x',
+                     type => $GraphQLFloat
+                 ),
+                 GraphQL::InputValue.new(
+                     name => 'cond',
+                     type => $GraphQLBoolean
+                 ),
+                 GraphQL::InputValue.new(
+                     name => 'person',
+                     type => $GraphQLString
+                 )
+                ]
             )
-    }
+        )
+    )
 ),
 #----------------------------------------------------------------------
 'Field with arguments of various types with defaults',
@@ -257,57 +247,51 @@ type Query {
         person: String = "Fred"): String
 }
 >>,
-GraphQL::Schema.new(
-    types =>
-    {
-        'Query' =>
-            GraphQL::Object.new(
-                name => 'Query',
-                fields => GraphQL::FieldList.new(
-                    'hello', GraphQL::Field.new(
-                        name => 'hello',
-                        type => $GraphQLString,
-                        args =>
-                        [
-                             GraphQL::InputValue.new(
-                                 name => 'id',
-                                 type => $GraphQLID,
-                                 defaultValue => '123xyz'
-                             ),
-                             GraphQL::InputValue.new(
-                                 name => 'first',
-                                 type => $GraphQLInt,
-                                 defaultValue => 27
-                             ),
-                             GraphQL::InputValue.new(
-                                 name => 'x',
-                                 type => $GraphQLFloat,
-                                 defaultValue => Num(1.2)
-                             ),
-                             GraphQL::InputValue.new(
-                                 name => 'cond',
-                                 type => $GraphQLBoolean,
-                                 defaultValue => True,
-                             ),
-                             GraphQL::InputValue.new(
-                                 name => 'person',
-                                 type => $GraphQLString,
-                                 defaultValue => 'Fred'
-                             )
-                        ]
-                    )
-                )
+graphql-schema(
+    GraphQL::Object.new(
+        name => 'Query',
+        fields => GraphQL::FieldList.new(
+            'hello', GraphQL::Field.new(
+                name => 'hello',
+                type => $GraphQLString,
+                args =>
+                [
+                 GraphQL::InputValue.new(
+                     name => 'id',
+                     type => $GraphQLID,
+                     defaultValue => '123xyz'
+                 ),
+                 GraphQL::InputValue.new(
+                     name => 'first',
+                     type => $GraphQLInt,
+                     defaultValue => 27
+                 ),
+                 GraphQL::InputValue.new(
+                     name => 'x',
+                     type => $GraphQLFloat,
+                     defaultValue => Num(1.2)
+                 ),
+                 GraphQL::InputValue.new(
+                     name => 'cond',
+                     type => $GraphQLBoolean,
+                     defaultValue => True,
+                 ),
+                 GraphQL::InputValue.new(
+                     name => 'person',
+                     type => $GraphQLString,
+                     defaultValue => 'Fred'
+                 )
+                ]
             )
-    }
+        )
+    )
 ),
 #----------------------------------------------------------------------
-
 ;
-
 
 for @testcases -> $description, $query, $schema
 {
-    ok my $testschema = build-schema($query), "Parsing $description";
+    ok my $testschema = graphql-schema($query), "Parsing $description";
 
     is-deeply($testschema, $schema, $description);
 }

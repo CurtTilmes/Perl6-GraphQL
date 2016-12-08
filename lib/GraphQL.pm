@@ -8,30 +8,8 @@ use GraphQL::Actions;
 use GraphQL::Grammar;
 use GraphQL::Introspection;
 
-sub build-schema(Str $schemastring) returns GraphQL::Schema is export
+sub add-meta-fields(:$schema)
 {
-    # First add Introspection types
-
-    my $actions = GraphQL::Actions.new;
-
-    GraphQL::Grammar.parse($GraphQL-Introspection-Schema,
-                           :$actions,
-                           :rule('TypeSchema'))
-        or die "Failed to parse Introspection Schema";
-
-    my $schema = $/.made;
-
-    # Then parse the specified schema string
-
-    GraphQL::Grammar.parse($schemastring, 
-                           :$schema, :$actions, :rule('TypeSchema'))
-        or die "Failed to parse schema";
-
-    die "Missing root query type $schema.query()" 
-        unless $schema.queryType and $schema.queryType.kind ~~ 'OBJECT';
-
-    # Then add meta-fields __schema and __type to the root type
-
     $schema.queryType.addfield(GraphQL::Field.new(
         name => '__type',
         type => $schema.type('__Type'),
@@ -51,11 +29,54 @@ sub build-schema(Str $schemastring) returns GraphQL::Schema is export
         ),
         resolver => sub { $schema }
     ));
+}
+
+multi sub graphql-schema(*@types, :$query, :$mutation)
+    returns GraphQL::Schema is export
+{
+    GraphQL::Grammar.parse($GraphQL-Introspection-Schema,
+                           :actions(GraphQL::Actions.new),
+                           :rule('TypeSchema'))
+        or die "Failed to parse Introspection Schema";
+
+    my $schema = $/.made;
+
+    for @types -> $type
+    {
+        $schema.addtype($type)
+    }
+
+    if ($query)
+    {
+        $schema.query = $query if $query;
+        add-meta-fields(:$schema);
+    }
+
+    if ($mutation)
+    {
+        $schema.mutation = $mutation;
+    }
 
     return $schema;
 }
 
-sub parse-document(Str $query) returns GraphQL::Document is export
+multi sub graphql-schema(Str $schemastring)
+    returns GraphQL::Schema is export
+{
+    my $schema = graphql-schema;  # Get an empty Schema
+
+    my $actions = GraphQL::Actions.new(:$schema);
+
+    GraphQL::Grammar.parse($schemastring, :$actions, :rule('TypeSchema'))
+        or die "Failed to parse schema";
+
+    add-meta-fields(:$schema);
+
+    return $schema;
+}
+
+sub graphql-document(Str $query)
+    returns GraphQL::Document is export
 {
     GraphQL::Grammar.parse($query,
                            actions => GraphQL::Actions.new,
@@ -65,12 +86,15 @@ sub parse-document(Str $query) returns GraphQL::Document is export
     $/.made;
 }
 
-sub ExecuteRequest(GraphQL::Schema :$schema,
-                   GraphQL::Document :$document,
-                   Str :$operationName,
-                   :%variableValues,
-                   :$initialValue) is export
+sub graphql-execute(GraphQL::Schema :$schema,
+                    GraphQL::Document :$document,
+                    Str :$operationName,
+                    :%variableValues,
+                    :$initialValue) is export
 {
+    die "Missing root query type $schema.query()" 
+        unless $schema.queryType and $schema.queryType.kind ~~ 'OBJECT';
+
     my $operation = $document.GetOperation($operationName);
 
     my %coercedVariableValues = CoerceVariableValues(:$schema,
