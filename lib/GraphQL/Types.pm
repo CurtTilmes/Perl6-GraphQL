@@ -4,8 +4,14 @@ unit module GraphQL::Types;
 
 class GraphQL::Type
 {
-    has Str  $.name;
-    has Str  $.description is rw;
+    has Str $.name;
+    has Str $.description is rw;
+
+    method add-comment-description($/)
+    {
+        return unless $<Comment>;
+        $!description = $<Comment>».made.join("\n");
+    }
 
     method description-comment
     {
@@ -18,7 +24,7 @@ class GraphQL::Scalar is GraphQL::Type
 {
     has Str $.kind = 'SCALAR';
 
-    method Str { "scalar $.name\n" }
+    method Str { self.description-comment ~ "scalar $.name\n" }
 }
 
 class GraphQL::String is GraphQL::Scalar
@@ -80,6 +86,7 @@ class GraphQL::Interface is GraphQL::Type
 
     method Str
     {
+        self.description-comment ~
         "interface $.name \{\n" ~
             $!fields.values.map({"  " ~ .Str}).join("\n") ~
         "\n}\n"
@@ -218,6 +225,7 @@ class GraphQL::Union is GraphQL::Type
 
     method Str
     {
+        self.description-comment ~
         "union $.name = {(@!possibleTypes».name).join(' | ')}\n";
     }
 }
@@ -225,7 +233,8 @@ class GraphQL::Union is GraphQL::Type
 class GraphQL::EnumValue is GraphQL::Scalar does Deprecatable
 {
     
-    method Str { $.name ~ self.deprecate-str }
+    method Str(Str $indent = '')
+    { self.description-comment ~ "$indent$.name" ~ self.deprecate-str }
 }
 
 class GraphQL::Enum is GraphQL::Scalar
@@ -240,8 +249,9 @@ class GraphQL::Enum is GraphQL::Scalar
     
     method Str
     {
+        self.description-comment ~
         "enum $.name \{\n" ~
-            @!enumValues.map({ "  $_.Str()"}).join("\n") ~
+            @!enumValues.map({ $_.Str('  ')}).join("\n") ~
         "\n}\n";
     }
 }

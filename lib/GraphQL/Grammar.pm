@@ -71,9 +71,10 @@ token EscapedCharacter { <[\"\\/bfnrt]> }
 
 token ws { <.Ignored>* }
 
-rule Document { <.ws> <Definition>+ }
+rule Document { <.ws> <.Comment>* % <.ws> <Definition>+ }
 
-rule Definition { <OperationDefinition> | <FragmentDefinition> }
+rule Definition { <.Comment>* % <.ws> 
+                      [ <OperationDefinition> | <FragmentDefinition> ] }
 
 rule OperationDefinition
 {
@@ -83,7 +84,9 @@ rule OperationDefinition
 
 token OperationType { 'query' | 'mutation' }
 
-rule SelectionSet { '{' <Selection>+ '}' }
+rule SelectionSet { '{' <.Comment>* % <.ws>
+                        <Selection>+
+                        <.Comment>* % <.ws> '}' }
 
 rule Selection { <Field> | <FragmentSpread> | <InlineFragment> }
 
@@ -159,7 +162,8 @@ rule TypeDefinition { <InterfaceDefinition>  |
                       <InputDefinition>      |
                       <SchemaDefinition> }
 
-rule InterfaceDefinition { 'interface' <Name> <FieldDefinitionList> }
+rule InterfaceDefinition
+{ <Comment>* % <.ws> 'interface' <Name> <FieldDefinitionList> }
 
 rule FieldDefinitionList { '{' <FieldDefinition>+ '}' }
 
@@ -170,7 +174,8 @@ rule ArgumentDefinitions { '(' <ArgumentDefinition>+ % <.ws> ')' }
 
 rule ArgumentDefinition { <Name> ':' <Type> <DefaultValue>? }
 
-rule ScalarDefinition { 'scalar' <Name> }
+rule ScalarDefinition 
+{ <Comment>* % <.ws> 'scalar' <Name> }
 
 rule ObjectTypeDefinition
 { <Comment>* % <.ws> 'type' <Name> <ImplementsDefinition>?
@@ -178,21 +183,25 @@ rule ObjectTypeDefinition
 
 rule ImplementsDefinition { 'implements' <Name>+ % <.ws> }
 
-rule UnionDefinition { 'union' <Name> '=' <UnionList> }
+rule UnionDefinition
+{ <Comment>* % <.ws> 'union' <Name> '=' <UnionList> }
 
 rule UnionList { <Name>+ % <.UnionSep> }
 
 rule UnionSep { <.ws> '|'  }
 
-rule EnumDefinition { 'enum' <Name> '{' <EnumValues> '}' }
+rule EnumDefinition
+{ <Comment>* % <.ws> 'enum' <Name> '{' <EnumValues> '}' }
 
 rule EnumValues { <EnumValue>+ }
 
-rule EnumValue { <Name> <Directives>? }
+rule EnumValue { <Comment>* % <.ws> <Name> <Directives>? }
 
-rule InputDefinition { 'input' <Name> <FieldDefinitionList> }
+rule InputDefinition
+{ <Comment>* % <.ws> 'input' <Name> <FieldDefinitionList> }
 
-rule SchemaDefinition { 'schema' '{'
+rule SchemaDefinition { <Comment>* % <.ws> 
+                        'schema' '{'
                             <SchemaQuery>?
                             <SchemaMutation>?
                         '}' }

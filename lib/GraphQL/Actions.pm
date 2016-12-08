@@ -205,8 +205,12 @@ method NonNullType($/)
 
 method InterfaceDefinition($/)
 {
-    make $!s.addtype(GraphQL::Interface.new(name => $<Name>.made,
-                         fields => $<FieldDefinitionList>.made));
+    my $i = GraphQL::Interface.new(name => $<Name>.made,
+                         fields => $<FieldDefinitionList>.made);
+
+    $i.add-comment-description($/);
+
+    $!s.addtype($i);
 }
 
 method FieldDefinitionList($/)
@@ -233,10 +237,7 @@ method FieldDefinition($/)
 	args => $<ArgumentDefinitions>.made // (),
     );
 
-    if $<Comment>
-    {
-	$f.description = $<Comment>».made.join("\n");
-    }
+    $f.add-comment-description($/);
 
     if $<Type>.made ~~ Str
     {
@@ -267,10 +268,7 @@ method ObjectTypeDefinition($/)
     my $o = GraphQL::Object.new(name => $<Name>.made,
                                 fields => $<FieldDefinitionList>.made);
 
-    if $<Comment>
-    {
-	$o.description = $<Comment>».made.join("\n");
-    }
+    $o.add-comment-description($/);
 
     $!s.addtype($o);
 
@@ -290,6 +288,8 @@ method UnionDefinition($/)
 {
     my $u = GraphQL::Union.new(name => $<Name>.made);
 
+    $u.add-comment-description($/);
+
     $!s.addtype($u);
 
     push @!lists-to-type, ($<UnionList>.made => $u);
@@ -302,8 +302,13 @@ method UnionList($/)
 
 method EnumDefinition($/)
 {
-    $!s.addtype(GraphQL::Enum.new(name => $<Name>.made,
-				  enumValues => $<EnumValues>.made));
+    my $e = GraphQL::Enum.new(name => $<Name>.made,
+                              enumValues => $<EnumValues>.made);
+
+    $e.add-comment-description($/);
+
+
+    $!s.addtype($e);
 }
 
 method EnumValues($/)
@@ -314,6 +319,9 @@ method EnumValues($/)
 method EnumValue($/)
 {
     my $enumvalue = GraphQL::EnumValue.new(name => $<Name>.made);
+
+    $enumvalue.add-comment-description($/);
+
     if $<Directives>.made<deprecated>:exists
     {
 	if $<Directives>.made<deprecated><reason>:exists
@@ -360,7 +368,11 @@ method ArgumentDefinitions($/)
 
 method ScalarDefinition($/)
 {
-    $!s.addtype(GraphQL::Scalar.new(name => $<Name>.made));
+    my $o = GraphQL::Scalar.new(name => $<Name>.made);
+
+    $o.add-comment-description($/);
+
+    $!s.addtype($o);
 }
 
 method TypeSchema($/)
