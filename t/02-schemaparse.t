@@ -16,11 +16,9 @@ type Query {
 graphql-schema(
     GraphQL::Object.new(
         name => 'Query',
-        fields => GraphQL::FieldList.new(
-            'hello', GraphQL::Field.new(
-                name => 'hello',
-                type => $GraphQLString
-            )
+        fields => GraphQL::Field.new(
+            name => 'hello',
+            type => $GraphQLString
         )
     )
 ),
@@ -37,12 +35,10 @@ graphql-schema(
     GraphQL::Object.new(
         name => 'Query',
         description => 'Query description',
-        fields => GraphQL::FieldList.new(
-            'hello', GraphQL::Field.new(
-                name => 'hello',
-                description => 'field description for hello',
-                type => $GraphQLString
-            )
+        fields => GraphQL::Field.new(
+            name => 'hello',
+            description => 'field description for hello',
+            type => $GraphQLString
         )
     )
 ),
@@ -56,11 +52,9 @@ type Query {
 graphql-schema(
     GraphQL::Object.new(
         name => 'Query',
-        fields => GraphQL::FieldList.new(
-            'hello', GraphQL::Field.new(
-                name => 'hello',
-                type => GraphQL::Non-Null.new(ofType => $GraphQLString)
-            )
+        fields => GraphQL::Field.new(
+            name => 'hello',
+            type => GraphQL::Non-Null.new(ofType => $GraphQLString)
         )
     )
 ),
@@ -74,11 +68,9 @@ type Query {
 graphql-schema(
     GraphQL::Object.new(
         name => 'Query',
-        fields => GraphQL::FieldList.new(
-            'hello', GraphQL::Field.new(
-                name => 'hello',
-                type => GraphQL::List.new(ofType => $GraphQLString)
-            )
+        fields => GraphQL::Field.new(
+            name => 'hello',
+            type => GraphQL::List.new(ofType => $GraphQLString)
         )
     )
 ),
@@ -92,14 +84,12 @@ type Query {
 graphql-schema(
     GraphQL::Object.new(
         name => 'Query',
-        fields => GraphQL::FieldList.new(
-            'hello', GraphQL::Field.new(
-                name => 'hello',
-                type => GraphQL::Non-Null.new(
-                    ofType => GraphQL::List.new(
-                        ofType => GraphQL::Non-Null.new(
-                            ofType => $GraphQLString)
-                    )
+        fields => GraphQL::Field.new(
+            name => 'hello',
+            type => GraphQL::Non-Null.new(
+                ofType => GraphQL::List.new(
+                    ofType => GraphQL::Non-Null.new(
+                        ofType => $GraphQLString)
                 )
             )
         )
@@ -119,25 +109,25 @@ type Query {
 graphql-schema(
     GraphQL::Object.new(
         name => 'Query',
-        fields => GraphQL::FieldList.new(
-            'id', GraphQL::Field.new(
+        fields => (
+            GraphQL::Field.new(
                 name => 'id',
                 type => GraphQL::Non-Null.new(
                     ofType => $GraphQLID)
             ),
-            'name', GraphQL::Field.new(
+            GraphQL::Field.new(
                 name => 'name',
                 type => $GraphQLString
             ),
-            'age', GraphQL::Field.new(
+            GraphQL::Field.new(
                 name => 'age',
                 type => $GraphQLInt
             ),
-            'balance', GraphQL::Field.new(
+            GraphQL::Field.new(
                 name => 'balance',
                 type => $GraphQLFloat
             ),
-            'is_active', GraphQL::Field.new(
+            GraphQL::Field.new(
                 name => 'is_active',
                 type => $GraphQLBoolean
             )
@@ -154,8 +144,8 @@ type Query {
 graphql-schema(
     GraphQL::Object.new(
         name => 'Query',
-        fields => GraphQL::FieldList.new(
-            'hello', GraphQL::Field.new(
+        fields => (
+            GraphQL::Field.new(
                 name => 'hello',
                 type => $GraphQLString,
                 args =>
@@ -179,8 +169,8 @@ type Query {
 graphql-schema(
     GraphQL::Object.new(
         name => 'Query',
-        fields => GraphQL::FieldList.new(
-            'hello', GraphQL::Field.new(
+        fields => (
+            GraphQL::Field.new(
                 name => 'hello',
                 type => $GraphQLString,
                 args =>
@@ -205,8 +195,8 @@ type Query {
 graphql-schema(
     GraphQL::Object.new(
         name => 'Query',
-        fields => GraphQL::FieldList.new(
-            'hello', GraphQL::Field.new(
+        fields => (
+            GraphQL::Field.new(
                 name => 'hello',
                 type => $GraphQLString,
                 args =>
@@ -250,8 +240,8 @@ type Query {
 graphql-schema(
     GraphQL::Object.new(
         name => 'Query',
-        fields => GraphQL::FieldList.new(
-            'hello', GraphQL::Field.new(
+        fields =>
+            GraphQL::Field.new(
                 name => 'hello',
                 type => $GraphQLString,
                 args =>
@@ -283,7 +273,6 @@ graphql-schema(
                  )
                 ]
             )
-        )
     )
 ),
 #----------------------------------------------------------------------

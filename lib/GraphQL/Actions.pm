@@ -216,14 +216,8 @@ method InterfaceDefinition($/)
 
 method FieldDefinitionList($/)
 {
-    my $fieldlist = GraphQL::FieldList.new;
+    make $<FieldDefinition>».made;
 
-    for $<FieldDefinition> -> $field
-    {
-        $fieldlist{$field.made.name} = $field.made
-    }
-
-    make $fieldlist;
 }
 
 method Comment($/)

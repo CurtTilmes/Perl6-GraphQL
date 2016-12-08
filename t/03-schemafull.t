@@ -8,24 +8,31 @@ use GraphQL::Types;
 
 my $schemastring = 
 Q<<
+# Entity interface
 interface Entity {
+    # id field
     id: ID!
+    # name field
     name: String
 }
 
+# Foo interface
 interface Foo {
     is_foo: Boolean
 }
 
+# Goo interface
 interface Goo {
     is_goo: Boolean
 }
 
+# Bar object type
 type Bar implements Foo {
     is_foo: Boolean
     is_bar: Boolean
 }
 
+# Baz object type
 type Baz implements Foo, Goo {
     is_foo: Boolean
     is_goo: Boolean
@@ -40,23 +47,30 @@ type Pet {
     name: String
 }
 
+# Single union of type person
 union SingleUnion = Person
 
+# Union can be either a Person or a Pet
 union MultipleUnion = Person | Pet
 
+# A Friend has a person (single), and either a Person or Pet (multiple)
 type Friend {
     single: SingleUnion
     multiple: MultipleUnion
 }
 
-scalar Url
+# URL is a special type of scalar
+scalar URL
 
+# User is a type of Entity
 type User implements Entity {
     id: ID!
     name: String
-    website: Url
+    # website field is of special scalar type URL
+    website: URL
 }
 
+# Root object type
 type Root {
     me: User
 }
@@ -64,19 +78,22 @@ type Root {
 schema {
     query: Root
 }   
->>,
+>>;
 
 ok my $Entity = GraphQL::Interface.new(
     name => 'Entity',
-    fields => GraphQL::FieldList.new(
-        'id', GraphQL::Field.new(
+    description => 'Entity interface',
+    fields => (
+        GraphQL::Field.new(
             name => 'id',
+            description => 'id field',
             type => GraphQL::Non-Null.new(
                 ofType => $GraphQLID
             )
         ),
-        'name', GraphQL::Field.new(
+        GraphQL::Field.new(
             name => 'name',
+            description => 'name field',
             type => $GraphQLString
         )
     )
@@ -84,8 +101,9 @@ ok my $Entity = GraphQL::Interface.new(
 
 ok my $Foo = GraphQL::Interface.new(
     name => 'Foo',
-    fields => GraphQL::FieldList.new(
-        'is_foo', GraphQL::Field.new(
+    description => 'Foo interface',
+    fields => (
+        GraphQL::Field.new(
             name => 'is_foo',
             type => $GraphQLBoolean
         )
@@ -94,8 +112,9 @@ ok my $Foo = GraphQL::Interface.new(
 
 ok my $Goo = GraphQL::Interface.new(
     name => 'Goo',
-    fields => GraphQL::FieldList.new(
-        'is_goo', GraphQL::Field.new(
+    description => 'Goo interface',
+    fields => (
+        GraphQL::Field.new(
             name => 'is_goo',
             type => $GraphQLBoolean
         )
@@ -104,13 +123,14 @@ ok my $Goo = GraphQL::Interface.new(
 
 ok my $Bar = GraphQL::Object.new(
     name => 'Bar',
+    description => 'Bar object type',
     interfaces => [ $Foo ],
-    fields => GraphQL::FieldList.new(
-        'is_foo', GraphQL::Field.new(
+    fields => (
+        GraphQL::Field.new(
             name => 'is_foo',
             type => $GraphQLBoolean
         ),
-        'is_bar', GraphQL::Field.new(
+        GraphQL::Field.new(
             name => 'is_bar',
             type => $GraphQLBoolean
         )
@@ -119,17 +139,18 @@ ok my $Bar = GraphQL::Object.new(
 
 ok my $Baz = GraphQL::Object.new(
     name => 'Baz',
+    description => 'Baz object type',
     interfaces => [ $Foo, $Goo ],
-    fields => GraphQL::FieldList.new(
-        'is_foo', GraphQL::Field.new(
+    fields => (
+        GraphQL::Field.new(
             name => 'is_foo',
             type => $GraphQLBoolean
         ),
-        'is_goo', GraphQL::Field.new(
+        GraphQL::Field.new(
             name => 'is_goo',
             type => $GraphQLBoolean
         ),
-        'is_baz', GraphQL::Field.new(
+        GraphQL::Field.new(
             name => 'is_baz',
             type => $GraphQLBoolean
         )
@@ -138,8 +159,8 @@ ok my $Baz = GraphQL::Object.new(
 
 ok my $Person = GraphQL::Object.new(
     name => 'Person',
-    fields => GraphQL::FieldList.new(
-        'name', GraphQL::Field.new(
+    fields => (
+        GraphQL::Field.new(
             name => 'name',
             type => $GraphQLString
         )
@@ -148,8 +169,8 @@ ok my $Person = GraphQL::Object.new(
 
 ok my $Pet = GraphQL::Object.new(
     name => 'Pet',
-    fields => GraphQL::FieldList.new(
-        'name', GraphQL::Field.new(
+    fields => (
+        GraphQL::Field.new(
             name => 'name',
             type => $GraphQLString
         )
@@ -158,80 +179,86 @@ ok my $Pet = GraphQL::Object.new(
 
 ok my $SingleUnion = GraphQL::Union.new(
     name => 'SingleUnion',
-    possibleTypes => set($Person)
+    description => 'Single union of type person',
+    possibleTypes => $Person
 ), 'Make Union SingleUnion';        
 
 ok my $MultipleUnion = GraphQL::Union.new(
     name => 'MultipleUnion',
-    possibleTypes => set($Person, $Pet)
+    description => 'Union can be either a Person or a Pet',
+    possibleTypes => ($Person, $Pet)
 ), 'Make Union MultipleUnion';        
 
 ok my $Friend = GraphQL::Object.new(
     name => 'Friend',
-    fields => GraphQL::FieldList.new(
-        'single', GraphQL::Field.new(
+    description => 'A Friend has a person (single), and either a Person or Pet (multiple)',
+    fields => (
+        GraphQL::Field.new(
             name => 'single',
             type => $SingleUnion
         ),
-        'multiple', GraphQL::Field.new(
+        GraphQL::Field.new(
             name => 'multiple',
             type => $MultipleUnion
         )
     )
 ), 'Make Object Friend';
 
-ok my $Url = GraphQL::Scalar.new(name => 'Url'), 'Make named scalar';
+ok my $URL = GraphQL::Scalar.new(
+    name => 'URL',
+    description => 'URL is a special type of scalar',
+    ), 'Make named scalar';
 
 ok my $User = GraphQL::Object.new(
     name => 'User',
+    description => 'User is a type of Entity',
     interfaces => [ $Entity ],
-    fields => GraphQL::FieldList.new(
-        'id', GraphQL::Field.new(
+    fields => (
+        GraphQL::Field.new(
             name => 'id',
             type => GraphQL::Non-Null.new(
                 ofType => $GraphQLID
             )
         ),
-        'name', GraphQL::Field.new(
+        GraphQL::Field.new(
             name => 'name',
             type => $GraphQLString
         ),
-        'website', GraphQL::Field.new(
+        GraphQL::Field.new(
             name => 'website',
-            type => $Url
+            description => 'website field is of special scalar type URL',
+            type => $URL
         )
     )
-), 'Make Object Type';
+), 'Make Object User';
 
-ok my $schema = GraphQL::Schema.new(
+ok my $schema = graphql-schema(
     query => 'Root',
-    types =>
-    {
-        Entity => $Entity,
-        Foo => $Foo,
-        Goo => $Goo,
-        Bar => $Bar,
-        Baz => $Baz,
-        Person => $Person,
-        Pet => $Pet,
-        SingleUnion => $SingleUnion,
-        MultipleUnion => $MultipleUnion,
-        Friend => $Friend,
-        Url => $Url,
-        User => $User,
-        Root => GraphQL::Object.new(
-            name => 'Root',
-            fields => GraphQL::FieldList.new(
-                'id', GraphQL::Field.new(
-                    name => 'me',
-                    type => $User
-                )
+    $Entity,
+    $Foo,
+    $Goo,
+    $Bar,
+    $Baz,
+    $Person,
+    $Pet,
+    $SingleUnion,
+    $MultipleUnion,
+    $Friend,
+    $URL,
+    $User,
+    GraphQL::Object.new(
+        name => 'Root',
+        description => 'Root object type',
+        fields => (
+            GraphQL::Field.new(
+                name => 'me',
+                type => $User
             )
         )
-    }
+    )
 ), 'Make Schema';
 
-ok my $testschema = build-schema($schemastring), 'Parse schema';
+ok my $testschema = graphql-schema($schemastring), 'Parse schema';
 
 is-deeply $testschema.type('Entity'), $Entity, 'Compare Interface Entity';
 
@@ -249,12 +276,16 @@ is-deeply $testschema.type('Pet'), $Pet, 'Compare Object Pet';
 
 is-deeply $testschema.type('SingleUnion'), $SingleUnion, 'Compare Union Single';
 
-# The MultipleUnion randomly fails to compare because of the set comparison
+is-deeply $testschema.type('MultipleUnion'), $MultipleUnion,
+    'Compare Union Multiple';
 
-#is-deeply $testschema.type('MultipleUnion'), $MultipleUnion,
-#    'Compare Union Multiple';
+is-deeply $testschema.type('Friend'), $Friend, 'Compare Object Friend';
 
-#is-deeply $testschema, $schema, 'Compare whole schema';
+is-deeply $testschema.type('URL'), $URL, 'Compare Scalar URL';
+
+is-deeply $testschema.type('User'), $User, 'Compare Object User';
+
+is-deeply $testschema, $schema, 'Compare whole schema';
 
 done-testing;
 

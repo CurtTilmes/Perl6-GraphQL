@@ -13,10 +13,28 @@ class GraphQL::Type
         $!description = $<Comment>».made.join("\n");
     }
 
-    method description-comment
+    method description-comment(Str $indent = '')
     {
-        $.description.split(/\n/).map({ "# $_\n" }).join('')
+        $.description.split(/\n/).map({ "$indent# $_\n" }).join('')
          if $.description
+    }
+}
+
+role Deprecatable
+{
+    has Bool $.isDeprecated = False;
+    has Str $.deprecationReason;
+
+    method deprecate(Str $reason = "No longer supported.")
+    {
+	$!isDeprecated = True;
+	$!deprecationReason = $reason;
+    }
+
+    method deprecate-str
+    {
+	' @deprecated(reason: "' ~ $!deprecationReason ~ '")'
+	    if $!isDeprecated;
     }
 }
 
@@ -69,64 +87,6 @@ class GraphQL::Non-Null is GraphQL::Type
     method Str  { $!ofType.Str  ~ '!' }
 }
 
-# Because the GraphQL spec stupidly defines these to be ordered..
-class GraphQL::FieldList is Hash::Ordered {}
-
-class GraphQL::Interface is GraphQL::Type
-{
-    has Str $.kind = 'INTERFACE';
-    has GraphQL::FieldList $.fields;
-    has GraphQL::Type @.possibleTypes;
-
-    method fields(Bool :$includeDeprecated)
-    {
-	$!fields.values.grep: {.name !~~ /^__/ and
-				   ($includeDeprecated or not .isDeprecated) }
-    }
-
-    method Str
-    {
-        self.description-comment ~
-        "interface $.name \{\n" ~
-            $!fields.values.map({"  " ~ .Str}).join("\n") ~
-        "\n}\n"
-    }
-}
-
-class GraphQL::Object is GraphQL::Type
-{
-    has Str $.kind = 'OBJECT';
-    has GraphQL::FieldList $.fields;
-    has GraphQL::Interface @.interfaces is rw;
-
-    method addfield($field) { $!fields{$field.name} = $field; }
-
-    method field($fieldname) { $!fields{$fieldname} }
-
-    method fields(Bool :$includeDeprecated = False)
-    {
-	$!fields.values.grep: {.name !~~ /^__/ and
-				   ($includeDeprecated or not .isDeprecated) }
-    }
-    
-    method fragment-applies(Str $fragmentType)
-    {
-        return True if $fragmentType eq $.name;
-        die "Check FragmentType in interfaces";
-    }
-
-    method Str
-    {
-        self.description-comment ~
-        "type $.name " ~ 
-            ('implements ' ~ (@!interfaces».name).join(', ') ~ ' '
-                if @.interfaces)
-        ~ "\{\n" ~
-        $.fields(:includeDeprecated).map({.Str('  ')}).join("\n")
-	~ "\n}\n"
-    }
-}
-
 class GraphQL::InputValue is GraphQL::Type
 {
     has GraphQL::Type $.type is rw;
@@ -139,24 +99,6 @@ class GraphQL::InputValue is GraphQL::Type
     }
 }
 
-role Deprecatable
-{
-    has Bool $.isDeprecated = False;
-    has Str $.deprecationReason;
-
-    method deprecate(Str $reason = "No longer supported.")
-    {
-	$!isDeprecated = True;
-	$!deprecationReason = $reason;
-    }
-
-    method deprecate-str
-    {
-	' @deprecated(reason: "' ~ $!deprecationReason ~ '")'
-	    if $!isDeprecated;
-    }
-}
-
 class GraphQL::Field is GraphQL::Type does Deprecatable
 {
     has GraphQL::Type $.type is rw;
@@ -165,7 +107,7 @@ class GraphQL::Field is GraphQL::Type does Deprecatable
 
     method Str(Str $indent = '')
     {
-        self.description-comment ~
+        self.description-comment($indent) ~
         "$indent$.name" ~
             ('(' ~ @!args.join(', ') ~ ')' if @!args)
         ~ ": $!type.name()" ~ self.deprecate-str
@@ -215,6 +157,62 @@ class GraphQL::Field is GraphQL::Type does Deprecatable
         }
 
         return $!resolver(|%args);
+    }
+}
+
+role HasFields
+{
+    has GraphQL::Field @.fields;
+
+    method field(Str $name)
+    {
+        @!fields.first: *.name eq $name;
+    }
+
+    method fields(Bool :$includeDeprecated)
+    {
+	@!fields.grep: {.name !~~ /^__/ and
+                            ($includeDeprecated or not .isDeprecated) }
+    }
+
+    method fields-str (Str $indent = '')
+    {
+        self.fields(:includeDeprecated).map({.Str($indent)}).join("\n")
+    }
+}
+
+class GraphQL::Interface is GraphQL::Type does HasFields
+{
+    has Str $.kind = 'INTERFACE';
+    has GraphQL::Type @.possibleTypes;
+
+    method Str
+    {
+        self.description-comment ~
+        "interface $.name \{\n" ~ self.fields-str('  ') ~ "\n}\n"
+    }
+}
+
+class GraphQL::Object is GraphQL::Type does HasFields
+{
+    has Str $.kind = 'OBJECT';
+    has GraphQL::Interface @.interfaces is rw;
+
+    method addfield($field) { push @!fields, $field }
+    
+    method fragment-applies(Str $fragmentType) returns Bool
+    {
+        return True if $fragmentType eq $.name;
+        die "Check FragmentType in interfaces"; # need to add more checks
+    }
+
+    method Str
+    {
+        self.description-comment ~
+        "type $.name " ~ 
+            ('implements ' ~ (@!interfaces».name).join(', ') ~ ' '
+                if @.interfaces)
+        ~ "\{\n" ~ self.fields-str('  ') ~ "\n}\n"
     }
 }
 
