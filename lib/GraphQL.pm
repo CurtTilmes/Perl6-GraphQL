@@ -288,7 +288,7 @@ sub CoerceArgumentValues(GraphQL::Object :$objectType,
 sub CollectFields(GraphQL::Object :$objectType,
                   :@selectionSet,
                   :%variableValues,
-                  :$visitedFragments = set(),
+                  :$visitedFragments is copy = ∅,
                   GraphQL::Document :$document)
 {
     my $groupedFields = Hash::Ordered.new;
@@ -312,6 +312,8 @@ sub CollectFields(GraphQL::Object :$objectType,
                 my $fragmentSpreadName = $selection.name;
 
                 next if $fragmentSpreadName ∈ $visitedFragments;
+
+                $visitedFragments ∪= $fragmentSpreadName;
 
                 my $fragment = $document.fragments{$fragmentSpreadName} or next;
 

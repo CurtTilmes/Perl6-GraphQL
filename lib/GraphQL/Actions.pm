@@ -223,7 +223,7 @@ method FieldDefinitionList($/)
 
 method Comment($/)
 {
-    make $/.Str.subst(/^\#/, '');
+    make $/.Str.subst(/^\#\s?/, '');
 }
 
 method FieldDefinition($/)
@@ -264,12 +264,13 @@ method FieldDefinition($/)
 
 method ObjectTypeDefinition($/)
 {
-#    say '-' x 70;
-#    say "Making Object";
-#    say $/;
-    
     my $o = GraphQL::Object.new(name => $<Name>.made,
                                 fields => $<FieldDefinitionList>.made);
+
+    if $<Comment>
+    {
+	$o.description = $<Comment>».made.join("\n");
+    }
 
     $!s.addtype($o);
 

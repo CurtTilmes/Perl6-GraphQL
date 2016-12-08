@@ -172,7 +172,8 @@ rule ArgumentDefinition { <Name> ':' <Type> <DefaultValue>? }
 
 rule ScalarDefinition { 'scalar' <Name> }
 
-rule ObjectTypeDefinition { 'type' <Name> <ImplementsDefinition>?
+rule ObjectTypeDefinition
+{ <Comment>* % <.ws> 'type' <Name> <ImplementsDefinition>?
                             <FieldDefinitionList> }
 
 rule ImplementsDefinition { 'implements' <Name>+ % <.ws> }

@@ -6,6 +6,12 @@ class GraphQL::Type
 {
     has Str  $.name;
     has Str  $.description is rw;
+
+    method description-comment
+    {
+        $.description.split(/\n/).map({ "# $_\n" }).join('')
+         if $.description
+    }
 }
 
 class GraphQL::Scalar is GraphQL::Type
@@ -90,13 +96,13 @@ class GraphQL::Object is GraphQL::Type
 
     method field($fieldname) { $!fields{$fieldname} }
 
-    method fields(Bool $includeDeprecated)
+    method fields(Bool :$includeDeprecated = False)
     {
 	$!fields.values.grep: {.name !~~ /^__/ and
 				   ($includeDeprecated or not .isDeprecated) }
     }
     
-    method fragment-applies($fragmentType)
+    method fragment-applies(Str $fragmentType)
     {
         return True if $fragmentType eq $.name;
         die "Check FragmentType in interfaces";
@@ -104,13 +110,12 @@ class GraphQL::Object is GraphQL::Type
 
     method Str
     {
+        self.description-comment ~
         "type $.name " ~ 
             ('implements ' ~ (@!interfaces».name).join(', ') ~ ' '
                 if @.interfaces)
         ~ "\{\n" ~
-        $.fields(True).values.grep({.name !~~ /^__/})
-                             .map({'  ' ~ .Str})
-                             .join("\n")
+        $.fields(:includeDeprecated).map({.Str('  ')}).join("\n")
 	~ "\n}\n"
     }
 }
@@ -151,9 +156,10 @@ class GraphQL::Field is GraphQL::Type does Deprecatable
     has GraphQL::InputValue @.args is rw;
     has Sub $.resolver is rw;
 
-    method Str
+    method Str(Str $indent = '')
     {
-        "$.name" ~
+        self.description-comment ~
+        "$indent$.name" ~
             ('(' ~ @!args.join(', ') ~ ')' if @!args)
         ~ ": $!type.name()" ~ self.deprecate-str
     }
