@@ -112,52 +112,6 @@ class GraphQL::Field is GraphQL::Type does Deprecatable
             ('(' ~ @!args.join(', ') ~ ')' if @!args)
         ~ ": $!type.name()" ~ self.deprecate-str
     }
-
-    method resolve(:$objectValue, :%argumentValues)
-    {
-        unless $!resolver.defined
-	{
-	    return $objectValue."$.name"() if $objectValue.^can($.name);
-
-	    die "No resolver for $objectValue.name(), $.name()";
-	}
-
-        #
-        # To provide a lot of flexibility in how the resolver
-        # gets called, introspect it and try to give it the args
-        # it wants.  Just a few styles implemented so far.
-        #
-        my %args;
-
-        given $!resolver
-        {
-            when Code
-            {
-                for $!resolver.signature.params -> $p
-                {
-                    if $p.named
-                    {
-                        for $p.named_names -> $param_name
-                        {
-                            if $param_name eq 'objectValue'
-                            {
-                                %args<objectValue> = $objectValue;
-                                last;
-                            }
-                            if %argumentValues{$param_name}:exists
-                            {
-                                %args{$param_name} =
-                                    %argumentValues{$param_name};
-                                last;
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        return $!resolver(|%args);
-    }
 }
 
 role HasFields
@@ -197,6 +151,7 @@ class GraphQL::Object is GraphQL::Type does HasFields
 {
     has Str $.kind = 'OBJECT';
     has GraphQL::Interface @.interfaces is rw;
+    has $.resolver is rw;
 
     method addfield($field) { push @!fields, $field }
     
@@ -425,18 +380,24 @@ class GraphQL::Schema
     # pointing to something Callable
     method resolvers(%resolvers)
     {
-        for %resolvers.kv -> $type, %obj
+        for %resolvers.kv -> $type, $obj
         {
             die "Undefined object $type" unless %!types{$type};
 
-            for %obj.kv -> $field, $resolver
+            if ($obj ~~ Associative)
             {
-                die "Undefined field $field for $type"
-                    unless %!types{$type}.field($field);
-
-                %!types{$type}.field($field).resolver = $resolver;
+                for $obj.kv -> $field, $resolver
+                {
+                    die "Undefined field $field for $type"
+                        unless %!types{$type}.field($field);
+                    
+                    %!types{$type}.field($field).resolver = $resolver;
+                }
             }
-            
+            else
+            {
+                %!types{$type}.resolver = $obj;
+            }
         }
     }
 }

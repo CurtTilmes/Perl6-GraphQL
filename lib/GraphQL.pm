@@ -101,6 +101,8 @@ sub graphql-execute(GraphQL::Schema :$schema,
                                                      :$operation,
                                                      :%variableValues);
 
+    my $objectValue = $initialValue // 0;
+
     given $operation.operation
     {
         when 'query'
@@ -108,7 +110,7 @@ sub graphql-execute(GraphQL::Schema :$schema,
             return ExecuteQuery(:$operation,
                                 :$schema,
                                 variableValues => %coercedVariableValues,
-                                :$initialValue,
+                                :$objectValue,
                                 :$document);
         }
         when 'mutation'
@@ -133,11 +135,11 @@ sub ExecuteQuery(GraphQL::Operation :$operation,
                  GraphQL::Schema :$schema,
                  GraphQL::Document :$document,
                  :%variableValues,
-                 :$initialValue)
+                 :$objectValue! is rw)
 {
     my $data = ExecuteSelectionSet(selectionSet => $operation.selectionset,
                                    objectType => $schema.queryType,
-                                   objectValue => $initialValue,
+                                   :$objectValue,
                                    :%variableValues,
                                    :$document);
 
@@ -149,7 +151,7 @@ sub ExecuteQuery(GraphQL::Operation :$operation,
 
 sub ExecuteSelectionSet(:@selectionSet,
                         GraphQL::Object :$objectType,
-                        :$objectValue,
+                        :$objectValue! is rw,
                         :%variableValues,
                         GraphQL::Document :$document)
 {
@@ -188,26 +190,78 @@ sub ExecuteSelectionSet(:@selectionSet,
 }
 
 sub ExecuteField(GraphQL::Object :$objectType,
-                 :$objectValue,
+                 :$objectValue! is rw,
                  :@fields,
                  GraphQL::Type :$fieldType,
                  :%variableValues)
 {
     my $field = @fields[0];
 
+    my $fieldName = $field.name;
+
     my %argumentValues = CoerceArgumentValues(:$objectType,
                                               :$field,
                                               :%variableValues);
 
-    my $resolvedValue = $objectType.field($field.name)
-                                   .resolve(:$objectValue,
-                                            :%argumentValues);
+    my $resolvedValue = ResolveFieldValue(:$objectType,
+                                          :$objectValue,
+                                          :$fieldName,
+                                          :%argumentValues);
 
     return CompleteValue(:$fieldType,
                          :@fields,
                          :result($resolvedValue),
                          :%variableValues);
      
+}
+
+sub ResolveFieldValue(GraphQL::Object :$objectType,
+                      :$objectValue! is rw,
+                      :$fieldName,
+                      :%argumentValues)
+{
+    my $field = $objectType.field($fieldName) or return;
+
+    if not $objectValue and $objectType.resolver
+    {
+        $objectValue = call-with-right-args($objectType.resolver,
+                                            |%argumentValues);
+    }
+
+    if $field.resolver
+    {
+        return call-with-right-args($field.resolver,
+                                    :$objectValue,
+                                    |%argumentValues);
+    }
+
+    if $objectValue.^can($fieldName)
+    {
+        return $objectValue."$fieldName"();
+    }
+
+    die "No resolver for $objectType.name() or $fieldName";
+}
+
+sub call-with-right-args(Sub $sub, *%allargs)
+{
+    my %args;
+    for $sub.signature.params -> $p
+    {
+        if ($p.named)
+        {
+            for $p.named_names -> $param_name
+            {
+                if %allargs{$param_name}:exists
+                {
+                    %args{$param_name} = %allargs{$param_name};
+                    last;
+                }
+            }
+        }
+    }
+
+    $sub(|%args);
 }
 
 sub CompleteValue(GraphQL::Type :$fieldType,
@@ -254,9 +308,11 @@ sub CompleteValue(GraphQL::Type :$fieldType,
 
             my @subSelectionSet = MergeSelectionSets(:@fields);
 
+            my $objectValue = $result;
+
             return ExecuteSelectionSet(:selectionSet(@subSelectionSet),
                                        :$objectType,
-                                       :objectValue($result),
+                                       :$objectValue,
                                        :%variableValues);
         }
 
