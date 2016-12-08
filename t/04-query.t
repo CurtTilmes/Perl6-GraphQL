@@ -6,7 +6,7 @@ use JSON::Fast;
 
 use Test;
 
-my $schema = build-schema('
+my $schema = graphql-schema('
 type User {
     id: String
     name: String
@@ -52,6 +52,71 @@ Q<<
     data => Hash::Ordered.new(
         'name', 'Fred',
         'id', 7,
+        'birthday', 'Friday'
+    )
+},
+#----------------------------------------------------------------------
+'Try some aliases',
+Q<<
+{
+    callme: name
+    id
+    mybday: birthday
+    orcallme: name
+}
+>>, 
+{
+    data => Hash::Ordered.new(
+        'callme', 'Fred',
+        'id', 7,
+        'mybday', 'Friday',
+        'orcallme', 'Fred'
+    )
+},
+#----------------------------------------------------------------------
+'Fragment',
+Q<<
+query {
+
+    name
+    id
+    ... morestuff
+    birthday
+}
+fragment morestuff on User {
+    callme: name
+    mybday: birthday
+}
+>>, 
+{
+    data => Hash::Ordered.new(
+        'name', 'Fred',
+        'id', 7,
+        'callme', 'Fred',
+        'mybday', 'Friday',
+        'birthday', 'Friday'
+    )
+},
+#----------------------------------------------------------------------
+'inline Fragment',
+Q<<
+query foo {
+
+    name
+    id
+    ... {
+        callme: name
+        mybday: birthday
+    }
+    birthday
+}
+>>, 
+{
+    data => Hash::Ordered.new(
+        'name', 'Fred',
+        'id', 7,
+        'callme', 'Fred',
+        'mybday', 'Friday',
         'birthday', 'Friday'
     )
 },
@@ -135,11 +200,31 @@ Q<<
         )
     }
 },
+#----------------------------------------------------------------------
+'Introspection __type(Float)',
+Q<<
+{
+    __type(name: "Float") {
+        name
+        kind
+        description
+    }
+}
+>>,
+{
+    data => {
+        __type => Hash::Ordered.new(
+            'name', 'Float',
+            'kind', 'SCALAR',
+            'description', Nil
+        )
+    }
+},
 ;
 
 for @testcases -> $description, $query, $expected
 {
-    is to-json(ExecuteRequest(:$schema, :query(parse-query($query)))),
+    is to-json(graphql-execute(:$schema,:document(graphql-document($query)))),
        to-json($expected), $description;
 }
 
