@@ -224,7 +224,7 @@ Q<<
 
 for @testcases -> $description, $query, $expected
 {
-    is to-json(graphql-execute(:$schema,:document($schema.document($query)))),
+    is to-json(GraphQL-ExecuteRequest($query, :$schema)),
        to-json($expected), $description;
 }
 

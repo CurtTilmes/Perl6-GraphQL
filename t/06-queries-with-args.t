@@ -196,7 +196,7 @@ for @testcases -> $description, $query, %variables, %expected
 {
     ok my $document = $schema.document($query), "parse $description";
 
-    ok my $ret = graphql-execute(:$schema, :$document, :%variables),
+    ok my $ret = GraphQL-ExecuteRequest(:$schema, :$document, :%variables),
     "execute $description";
 
 #   is-deeply $ret, %expected;

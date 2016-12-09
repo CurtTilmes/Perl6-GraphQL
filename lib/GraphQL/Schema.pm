@@ -97,7 +97,7 @@ class GraphQL::Schema
 
     method mutationType returns GraphQL::Object { %!types{$!mutation} }
 
-    method directives { die "No directives in schema yet" }
+    method directives { [] }
 
     method Str
     {

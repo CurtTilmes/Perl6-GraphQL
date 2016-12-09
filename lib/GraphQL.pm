@@ -1,12 +1,10 @@
-use Data::Dump;
 use Hash::Ordered;
 
 unit module GraphQL;
 
-use GraphQL::Types;
 use GraphQL::Schema;
 
-sub graphql-execute(Str $query?,
+sub GraphQL-ExecuteRequest(Str $query?,
                     GraphQL::Schema :$schema,
                     GraphQL::Document :$document = $schema.document($query),
                     Str :$operationName,
