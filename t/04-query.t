@@ -6,7 +6,7 @@ use JSON::Fast;
 
 use Test;
 
-my $schema = graphql-schema('
+my $schema = GraphQL::Schema.new('
 type User {
     id: String
     name: String
@@ -224,7 +224,7 @@ Q<<
 
 for @testcases -> $description, $query, $expected
 {
-    is to-json(graphql-execute(:$schema,:document(graphql-document($query)))),
+    is to-json(graphql-execute(:$schema,:document($schema.document($query)))),
        to-json($expected), $description;
 }
 

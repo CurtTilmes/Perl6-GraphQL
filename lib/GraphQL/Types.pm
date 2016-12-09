@@ -72,6 +72,15 @@ class GraphQL::ID is GraphQL::Scalar
     has Str $.name = 'ID';
 }
 
+#
+# Default Types
+#
+our $GraphQLString  is export = GraphQL::String.new;
+our $GraphQLFloat   is export = GraphQL::Float.new;
+our $GraphQLInt     is export = GraphQL::Int.new;
+our $GraphQLBoolean is export = GraphQL::Boolean.new;
+our $GraphQLID      is export = GraphQL::ID.new;
+
 class GraphQL::List is GraphQL::Type
 {
     has Str $.kind = 'LIST';
@@ -229,22 +238,6 @@ class GraphQL::Directive is GraphQL::Type
     has GraphQL::InputValue @.args;
 }
 
-#
-# Default Types
-#
-our $GraphQLString  is export = GraphQL::String.new;
-our $GraphQLFloat   is export = GraphQL::Float.new;
-our $GraphQLInt     is export = GraphQL::Int.new;
-our $GraphQLBoolean is export = GraphQL::Boolean.new;
-our $GraphQLID      is export = GraphQL::ID.new;
-
-our %defaultTypes is export =
-    Int     => $GraphQLInt,
-    Float   => $GraphQLFloat,
-    String  => $GraphQLString,
-    Boolean => $GraphQLBoolean,
-    ID      => $GraphQLID;
-
 class GraphQL::Variable
 {
     has Str $.name;
@@ -371,63 +364,3 @@ class GraphQL::Document
     }
 }
 
-class GraphQL::Schema
-{
-    has GraphQL::Type %!types = %defaultTypes;
-    has Str $.query is rw = 'Query';
-    has Str $.mutation is rw;
-
-    method types { %!types.values }
-
-    method addtype(GraphQL::Type $newtype)
-    {
-	%!types{$newtype.name} = $newtype
-    }
-
-    method type($typename) { %!types{$typename} }
-
-    method queryType returns GraphQL::Object { %!types{$!query} }
-
-    method mutationType returns GraphQL::Object { %!types{$!mutation} }
-
-    method directives { die "No directives in schema yet" }
-
-    method Str
-    {
-        my $str = '';
-
-        for %!types.kv -> $typename, $type
-        {
-            next if %defaultTypes{$typename}.defined or $typename ~~ /^__/;
-            $str ~= $type.Str ~ "\n";
-        }
-
-        $str ~= "schema \{\n";
-	$str ~= "  query: $!query\n";
-        $str ~= "  mutation: $!mutation\n" if $!mutation;
-	$str ~= "}\n";
-    }
-
-    method resolvers(%resolvers)
-    {
-        for %resolvers.kv -> $type, $obj
-        {
-            die "Undefined object $type" unless %!types{$type};
-
-            if ($obj ~~ Associative)
-            {
-                for $obj.kv -> $field, $resolver
-                {
-                    die "Undefined field $field for $type"
-                        unless %!types{$type}.field($field);
-                    
-                    %!types{$type}.field($field).resolver = $resolver;
-                }
-            }
-            else
-            {
-                %!types{$type}.resolver = $obj;
-            }
-        }
-    }
-}

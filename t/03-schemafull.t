@@ -232,8 +232,8 @@ ok my $User = GraphQL::Object.new(
     )
 ), 'Make Object User';
 
-ok my $schema = graphql-schema(
-    query => 'Root',
+ok my $schema = GraphQL::Schema.new(
+    queryType => 'Root',
     $Entity,
     $Foo,
     $Goo,
@@ -258,7 +258,7 @@ ok my $schema = graphql-schema(
     )
 ), 'Make Schema';
 
-ok my $testschema = graphql-schema($schemastring), 'Parse schema';
+ok my $testschema = GraphQL::Schema.new($schemastring), 'Parse schema';
 
 is-deeply $testschema.type('Entity'), $Entity, 'Compare Interface Entity';
 

@@ -24,13 +24,11 @@ has @!lists-to-type;   # These take lists of types
 #
 # Returns this (in .made) when making a <Document>
 #
+
 has GraphQL::Document $!q = GraphQL::Document.new;
 
-#
-# Returns this (in .made) when making a <TypeSchema>
-# Supply an existing schema to just add more types to it
-#
-has GraphQL::Schema $.schema = GraphQL::Schema.new;
+# Adds types to the supplied schema as they are parsed
+has $.schema;
 
 method Document($/)
 {
@@ -259,7 +257,6 @@ method InterfaceDefinition($/)
 method FieldDefinitionList($/)
 {
     make $<FieldDefinition>».made;
-
 }
 
 method Comment($/)

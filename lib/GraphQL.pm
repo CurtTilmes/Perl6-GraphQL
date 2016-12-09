@@ -4,98 +4,15 @@ use Hash::Ordered;
 unit module GraphQL;
 
 use GraphQL::Types;
-use GraphQL::Actions;
-use GraphQL::Grammar;
-use GraphQL::Introspection;
-
-sub add-meta-fields(:$schema)
-{
-    $schema.queryType.addfield(GraphQL::Field.new(
-        name => '__type',
-        type => $schema.type('__Type'),
-        args => [ GraphQL::InputValue.new(
-                      name => 'name',
-                      type => GraphQL::Non-Null.new(
-                          ofType => $GraphQLString
-                      )
-                  ) ],
-        resolver => sub (:$name) { $schema.type($name) }
-    ));
-
-    $schema.queryType.addfield(GraphQL::Field.new(
-        name => '__schema',
-        type => GraphQL::Non-Null.new(
-            ofType => $schema.type('__Schema')
-        ),
-        resolver => sub { $schema }
-    ));
-}
-
-multi sub graphql-schema(*@types, :$query, :$mutation)
-    returns GraphQL::Schema is export
-{
-    GraphQL::Grammar.parse($GraphQL-Introspection-Schema,
-                           :actions(GraphQL::Actions.new),
-                           :rule('TypeSchema'))
-        or die "Failed to parse Introspection Schema";
-
-    my $schema = $/.made;
-
-    for @types -> $type
-    {
-        $schema.addtype($type)
-    }
-
-    if ($query)
-    {
-        $schema.query = $query if $query;
-        add-meta-fields(:$schema);
-    }
-
-    if ($mutation)
-    {
-        $schema.mutation = $mutation;
-    }
-
-    return $schema;
-}
-
-multi sub graphql-schema(Str $schemastring)
-    returns GraphQL::Schema is export
-{
-    my $schema = graphql-schema;
-
-    my $actions = GraphQL::Actions.new(:$schema);
-
-    GraphQL::Grammar.parse($schemastring, :$actions, :rule('TypeSchema'))
-        or die "Failed to parse schema";
-
-    add-meta-fields(:$schema);
-
-    return $schema;
-}
-
-sub graphql-document(Str $query, :$schema)
-    returns GraphQL::Document is export
-{
-    GraphQL::Grammar.parse($query,
-                           :actions(GraphQL::Actions.new(:$schema)),
-                           rule => 'Document')
-        or die "Failed to parse query";
-
-    $/.made;
-}
+use GraphQL::Schema;
 
 sub graphql-execute(Str $query?,
                     GraphQL::Schema :$schema,
-                    GraphQL::Document :$document = graphql-document($query),
+                    GraphQL::Document :$document = $schema.document($query),
                     Str :$operationName,
                     :%variables,
                     :$initialValue) is export
 {
-    die "Missing root query type $schema.query()" 
-        unless $schema.queryType and $schema.queryType.kind ~~ 'OBJECT';
-
     my $operation = $document.GetOperation($operationName);
 
     my %coercedVariableValues = CoerceVariableValues(:$schema,
@@ -108,6 +25,10 @@ sub graphql-execute(Str $query?,
     {
         when 'query'
         {
+            die "Missing root query type $schema.query()" 
+                unless $schema.queryType
+                and $schema.queryType.kind ~~ 'OBJECT';
+
             return ExecuteQuery(:$operation,
                                 :$schema,
                                 variables => %coercedVariableValues,
@@ -116,6 +37,10 @@ sub graphql-execute(Str $query?,
         }
         when 'mutation'
         {
+            die "Missing root mutation type $schema.mutation()"
+                unless $schema.mutationType
+                and $schema.mutationType.kind ~~ 'OBJECT';
+
             return ExecuteMutation(:$operation,
                                    :$schema,
                                    variables => %coercedVariableValues,

@@ -13,7 +13,7 @@ type Query {
   hello: String
 }
 >>,
-graphql-schema(
+GraphQL::Schema.new(
     GraphQL::Object.new(
         name => 'Query',
         fields => GraphQL::Field.new(
@@ -31,7 +31,7 @@ type Query {
   hello: String
 }
 >>,
-graphql-schema(
+GraphQL::Schema.new(
     GraphQL::Object.new(
         name => 'Query',
         description => 'Query description',
@@ -49,7 +49,7 @@ type Query {
   hello: String!
 }
 >>,
-graphql-schema(
+GraphQL::Schema.new(
     GraphQL::Object.new(
         name => 'Query',
         fields => GraphQL::Field.new(
@@ -65,7 +65,7 @@ type Query {
   hello: [String]
 }
 >>,
-graphql-schema(
+GraphQL::Schema.new(
     GraphQL::Object.new(
         name => 'Query',
         fields => GraphQL::Field.new(
@@ -81,7 +81,7 @@ type Query {
   hello: [String!]!
 }
 >>,
-graphql-schema(
+GraphQL::Schema.new(
     GraphQL::Object.new(
         name => 'Query',
         fields => GraphQL::Field.new(
@@ -106,7 +106,7 @@ type Query {
     is_active: Boolean
 }
 >>,
-graphql-schema(
+GraphQL::Schema.new(
     GraphQL::Object.new(
         name => 'Query',
         fields => (
@@ -141,7 +141,7 @@ type Query {
   hello(limit: Int): String
 }
 >>,
-graphql-schema(
+GraphQL::Schema.new(
     GraphQL::Object.new(
         name => 'Query',
         fields => (
@@ -166,7 +166,7 @@ type Query {
   hello(limit: Int = 10): String
 }
 >>,
-graphql-schema(
+GraphQL::Schema.new(
     GraphQL::Object.new(
         name => 'Query',
         fields => (
@@ -192,7 +192,7 @@ type Query {
   hello(id: ID, first: Int, x: Float, cond: Boolean, person: String): String
 }
 >>,
-graphql-schema(
+GraphQL::Schema.new(
     GraphQL::Object.new(
         name => 'Query',
         fields => (
@@ -237,7 +237,7 @@ type Query {
         person: String = "Fred"): String
 }
 >>,
-graphql-schema(
+GraphQL::Schema.new(
     GraphQL::Object.new(
         name => 'Query',
         fields =>
@@ -280,7 +280,7 @@ graphql-schema(
 
 for @testcases -> $description, $query, $schema
 {
-    ok my $testschema = graphql-schema($query), "Parsing $description";
+    ok my $testschema = GraphQL::Schema.new($query), "Parsing $description";
 
     is-deeply($testschema, $schema, $description);
 }

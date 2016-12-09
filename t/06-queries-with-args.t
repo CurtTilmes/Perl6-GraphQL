@@ -7,7 +7,7 @@ use JSON::Fast;
 
 use Test;
 
-ok my $schema = graphql-schema('
+ok my $schema = GraphQL::Schema.new('
 type User {
   id: ID
   name: String
@@ -194,7 +194,7 @@ my @testcases =
 
 for @testcases -> $description, $query, %variables, %expected
 {
-    ok my $document = graphql-document($query), "parse $description";
+    ok my $document = $schema.document($query), "parse $description";
 
     ok my $ret = graphql-execute(:$schema, :$document, :%variables),
     "execute $description";

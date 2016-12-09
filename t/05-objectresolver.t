@@ -5,7 +5,7 @@ use GraphQL;
 
 use Test;
 
-ok my $schema = graphql-schema('
+ok my $schema = GraphQL::Schema.new('
 type User {
     id: ID
     name: String
@@ -43,7 +43,7 @@ $schema.resolvers(
     }
 });
 
-ok my $document = graphql-document('
+ok my $document = $schema.document('
 query {
     name
     id

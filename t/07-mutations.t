@@ -7,7 +7,7 @@ use JSON::Fast;
 
 use Test;
 
-ok my $schema = graphql-schema('
+ok my $schema = GraphQL::Schema.new('
 type User {
   id: ID
   name: String
@@ -239,7 +239,7 @@ my @testcases =
 
 for @testcases -> $description, $query, %variables, %expected
 {
-    ok my $document = graphql-document(:$schema, $query),
+    ok my $document = $schema.document($query),
     "parse $description";
 
     ok my $ret = graphql-execute(:$schema, :$document, :%variables),
@@ -247,8 +247,7 @@ for @testcases -> $description, $query, %variables, %expected
 
 #   is-deeply $ret, %expected;
 
-    is to-json($ret), to-json(%expected),
-    "compare $description";
+    is to-json($ret), to-json(%expected), "compare $description";
 }
 
 done-testing;
