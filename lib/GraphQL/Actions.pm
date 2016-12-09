@@ -51,7 +51,24 @@ method OperationDefinition($/)
     $!q.operations{$name} = GraphQL::Operation.new(
         name         => $name,
         operation    => $<OperationType> ?? $<OperationType>.Str !! 'query',
+        vars         => $<VariableDefinitions>.made // (),
         selectionset => $<SelectionSet>.made
+    );
+}
+
+method VariableDefinitions($/)
+{
+    make $<VariableDefinition>».made;
+}
+
+method VariableDefinition($/)
+{
+    die "Unknown type $<Type>.made" unless $!schema.type($<Type>.made);
+
+    make GraphQL::Variable.new(
+        name => $<Variable>.<Name>.made,
+        type => $!schema.type($<Type>.made),
+        defaultValue => $<DefaultValue>.made
     );
 }
 
@@ -132,6 +149,16 @@ method TypeCondition($/)
 method Name($/)
 {
     make $/.Str;
+}
+
+method Variable($/)
+{
+    make GraphQL::Variable.new(name => $<Name>.made);
+}
+
+method Value:sym<Variable>($/)
+{
+    make $<Variable>.made;
 }
 
 method Value:sym<FloatValue>($/)
@@ -392,6 +419,8 @@ method TypeSchema($/)
             {
                 $field.value.ofType = $!schema.type($field.key);
             }
+
+            default { die "Need to type $field.value.WHAT()" }
         }
     }
 
@@ -414,6 +443,8 @@ method TypeSchema($/)
             {
                 $typelist.value.possibleTypes = @list-of-types;
             }
+
+            default { die "Need to type $typelist.value.WHAT()" }
         }
     }
 

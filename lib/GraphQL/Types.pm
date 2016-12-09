@@ -18,6 +18,8 @@ class GraphQL::Type
         $.description.split(/\n/).map({ "$indent# $_\n" }).join('')
          if $.description
     }
+
+    method Str { $!name }
 }
 
 role Deprecatable
@@ -231,17 +233,36 @@ our %defaultTypes is export =
     Boolean => $GraphQLBoolean,
     ID      => $GraphQLID;
 
+class GraphQL::Variable
+{
+    has Str $.name;
+    has GraphQL::Type $.type;
+    has $.defaultValue;
+
+    method perl
+    {
+        "\$$!name"
+    }
+
+    method Str
+    {
+        "\$$!name: $!type.name()" ~
+            (" = $!defaultValue" if $!defaultValue.defined)
+    }
+}
+
 class GraphQL::Operation
 {
-    has Str $.operation = 'query';
     has Str $.name;
-    has %.vars;
+    has Str $.operation = 'query';
+    has @.vars;
     has %.directives;
     has @.selectionset;  # QueryField or Fragment
 
     method Str
     {
-        ("$.operation $.name " if $.name) ~ "\{\n" ~
+        ("$.operation $.name " if $.name) ~
+        ( '(' ~ @.vars.map({.Str}).join(', ') ~ ') ' if @.vars) ~ "\{\n" ~
             @.selectionset.map({.Str('  ')}).join('') ~
         "}\n"
     }
@@ -261,7 +282,7 @@ class GraphQL::QueryField
     {
         $indent ~ ($!alias ~ ':=' if $!alias) ~ $!name
         ~
-            ( '(' ~ %!args.keys.map({$_.Str ~ ':' ~ %!args{$_}.perl})
+            ( '(' ~ %!args.keys.map({$_.Str ~ ': ' ~ %!args{$_}.perl})
                                .join(', ') ~ ')' if %!args)
         ~
             ( " \{\n" ~ @!selectionset.map({.Str($indent ~ '  ')}).join('') ~

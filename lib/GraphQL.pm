@@ -127,7 +127,23 @@ sub CoerceVariableValues(GraphQL::Schema :$schema,
 {
     my %coercedValues;
 
-    ...
+    for $operation.vars -> $v
+    {
+        unless %variables{$v.name}
+        {
+            if $v.defaultValue.defined
+            {
+                %coercedValues{$v.name} = $v.defaultValue;
+            }
+            if $v.type ~~ GraphQL::Non-Null
+            {
+                die "Must set value for Non-Nullable type $v.type.name() "
+                    ~ "for variable \$$v.name"
+            }
+            next;
+        }
+        %coercedValues{$v.name} = %variables{$v.name};
+    }
 
     return %coercedValues;
 }
@@ -354,13 +370,17 @@ sub CoerceArgumentValues(GraphQL::Object :$objectType,
 
     for $objectType.field($field.name).args -> $arg
     {
-        # ...if $field.args{$arg.name} is a variable, resolve it first
-        
-        %coercedValues{$arg.name} = $field.args{$arg.name} //
-            $arg.defaultValue //
-            die "Must provide $arg.name";
+        my $value = $field.args{$arg.name};
 
-        # ...Coerce value to type
+        if $value ~~ GraphQL::Variable
+        {
+            $value = %variables{$value.name} // $arg.defaultValue //
+                die "Must provide $arg.name()";
+        }
+
+        %coercedValues{$arg.name} = $value //
+            $arg.defaultValue //
+            die "Must provide $arg.name()";
     }
 
     return %coercedValues;

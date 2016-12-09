@@ -126,7 +126,70 @@ my @testcases =
             )
         ]
     }
-}
+},
+
+#----------------------------------------------------------------------
+'Query for single user with variable',
+
+'query ($x: ID) { user(id: $x) { id, name } }',
+
+{ x => 3 },
+
+{
+    data => {
+        user => Hash::Ordered.new(
+            'id', 3,
+            'name', 'Ginger'
+        )
+    }
+},
+
+#----------------------------------------------------------------------
+'Query for another user with variable',
+
+'query ($x: ID) { user(id: $x) { id, name } }',
+
+{ x => 4 },
+
+{
+    data => {
+        user => Hash::Ordered.new(
+            'id', 4,
+            'name', 'Mary Anne'
+        )
+    }
+},
+
+#----------------------------------------------------------------------
+'Query for multiple users with multiple variables',
+
+'query ($start: Int, $count: Int)
+ { allusers(start: $start, count: $count) { name status } }',
+
+{ start => 1, count => 4 },
+
+{
+    data => {
+        allusers => [
+            Hash::Ordered.new(
+                'name', 'Skipper',
+                'status', False
+            ),
+            Hash::Ordered.new(
+                'name', 'Professor',
+                'status', True
+            ),
+            Hash::Ordered.new(
+                'name', 'Ginger',
+                'status', True
+            ),
+            Hash::Ordered.new(
+                'name', 'Mary Anne',
+                'status', True
+            )
+        ]
+    }
+},
 ;
 
 for @testcases -> $description, $query, %variables, %expected
