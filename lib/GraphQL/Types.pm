@@ -375,9 +375,6 @@ class GraphQL::Schema
 	$str ~= "}\n";
     }
 
-    #
-    # Two level Hash, first level is object type, second level is field name
-    # pointing to something Callable
     method resolvers(%resolvers)
     {
         for %resolvers.kv -> $type, $obj

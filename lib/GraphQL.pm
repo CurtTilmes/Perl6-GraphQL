@@ -63,7 +63,7 @@ multi sub graphql-schema(*@types, :$query, :$mutation)
 multi sub graphql-schema(Str $schemastring)
     returns GraphQL::Schema is export
 {
-    my $schema = graphql-schema;  # Get an empty Schema
+    my $schema = graphql-schema;
 
     my $actions = GraphQL::Actions.new(:$schema);
 
@@ -86,10 +86,11 @@ sub graphql-document(Str $query)
     $/.made;
 }
 
-sub graphql-execute(GraphQL::Schema :$schema,
-                    GraphQL::Document :$document,
+sub graphql-execute(Str $query?,
+                    GraphQL::Schema :$schema,
+                    GraphQL::Document :$document = graphql-document($query),
                     Str :$operationName,
-                    :%variableValues,
+                    :%variables,
                     :$initialValue) is export
 {
     die "Missing root query type $schema.query()" 
@@ -99,7 +100,7 @@ sub graphql-execute(GraphQL::Schema :$schema,
 
     my %coercedVariableValues = CoerceVariableValues(:$schema,
                                                      :$operation,
-                                                     :%variableValues);
+                                                     :%variables);
 
     my $objectValue = $initialValue // 0;
 
@@ -109,7 +110,7 @@ sub graphql-execute(GraphQL::Schema :$schema,
         {
             return ExecuteQuery(:$operation,
                                 :$schema,
-                                variableValues => %coercedVariableValues,
+                                variables => %coercedVariableValues,
                                 :$objectValue,
                                 :$document);
         }
@@ -122,7 +123,7 @@ sub graphql-execute(GraphQL::Schema :$schema,
 
 sub CoerceVariableValues(GraphQL::Schema :$schema,
                          GraphQL::Operation :$operation,
-                         :%variableValues)
+                         :%variables)
 {
     my %coercedValues;
 
@@ -134,30 +135,30 @@ sub CoerceVariableValues(GraphQL::Schema :$schema,
 sub ExecuteQuery(GraphQL::Operation :$operation,
                  GraphQL::Schema :$schema,
                  GraphQL::Document :$document,
-                 :%variableValues,
-                 :$objectValue! is rw)
+                 :%variables,
+                 :$objectValue! is rw) returns Hash
 {
     my $data = ExecuteSelectionSet(selectionSet => $operation.selectionset,
                                    objectType => $schema.queryType,
                                    :$objectValue,
-                                   :%variableValues,
+                                   :%variables,
                                    :$document);
 
-    return %(
+    return {
         data => $data
-    );
+    };
 
 }
 
 sub ExecuteSelectionSet(:@selectionSet,
                         GraphQL::Object :$objectType,
                         :$objectValue! is rw,
-                        :%variableValues,
+                        :%variables,
                         GraphQL::Document :$document)
 {
     my $groupedFieldSet = CollectFields(:$objectType,
                                         :@selectionSet,
-                                        :%variableValues,
+                                        :%variables,
                                         :$document);
 
     my $resultMap = Hash::Ordered.new;
@@ -180,7 +181,7 @@ sub ExecuteSelectionSet(:@selectionSet,
                                           :$objectValue,
                                           :@fields,
                                           :$fieldType,
-                                          :%variableValues);
+                                          :%variables);
         }
 
         $resultMap{$responseKey} = $responseValue;
@@ -193,7 +194,7 @@ sub ExecuteField(GraphQL::Object :$objectType,
                  :$objectValue! is rw,
                  :@fields,
                  GraphQL::Type :$fieldType,
-                 :%variableValues)
+                 :%variables)
 {
     my $field = @fields[0];
 
@@ -201,7 +202,7 @@ sub ExecuteField(GraphQL::Object :$objectType,
 
     my %argumentValues = CoerceArgumentValues(:$objectType,
                                               :$field,
-                                              :%variableValues);
+                                              :%variables);
 
     my $resolvedValue = ResolveFieldValue(:$objectType,
                                           :$objectValue,
@@ -211,7 +212,7 @@ sub ExecuteField(GraphQL::Object :$objectType,
     return CompleteValue(:$fieldType,
                          :@fields,
                          :result($resolvedValue),
-                         :%variableValues);
+                         :%variables);
      
 }
 
@@ -267,7 +268,7 @@ sub call-with-right-args(Sub $sub, *%allargs)
 sub CompleteValue(GraphQL::Type :$fieldType,
                   :@fields,
                   :$result,
-                  :%variableValues)
+                  :%variables)
 {
     given $fieldType
     {
@@ -276,7 +277,7 @@ sub CompleteValue(GraphQL::Type :$fieldType,
             my $completedResult = CompleteValue(:fieldType($fieldType.ofType),
                                                 :@fields,
                                                 :$result,
-                                                :%variableValues);
+                                                :%variables);
             
             die "Null in non-null type" unless $completedResult.defined;
 
@@ -292,7 +293,7 @@ sub CompleteValue(GraphQL::Type :$fieldType,
             return $result.map({CompleteValue(:fieldType($fieldType.ofType),
                                               :@fields,
                                               :result($_),
-                                              :%variableValues)});
+                                              :%variables)});
         }
 
         when GraphQL::Scalar
@@ -313,7 +314,7 @@ sub CompleteValue(GraphQL::Type :$fieldType,
             return ExecuteSelectionSet(:selectionSet(@subSelectionSet),
                                        :$objectType,
                                        :$objectValue,
-                                       :%variableValues);
+                                       :%variables);
         }
 
         default 
@@ -347,7 +348,7 @@ sub MergeSelectionSets(:@fields)
 #
 sub CoerceArgumentValues(GraphQL::Object :$objectType,
                          GraphQL::QueryField :$field,
-                         :%variableValues)
+                         :%variables)
 {
     my %coercedValues;
 
@@ -367,7 +368,7 @@ sub CoerceArgumentValues(GraphQL::Object :$objectType,
 
 sub CollectFields(GraphQL::Object :$objectType,
                   :@selectionSet,
-                  :%variableValues,
+                  :%variables,
                   :$visitedFragments is copy = ∅,
                   GraphQL::Document :$document)
 {
@@ -406,7 +407,7 @@ sub CollectFields(GraphQL::Object :$objectType,
                 my $fragmentGroupedFieldSet = CollectFields(
                     :$objectType,
                     :selectionSet(@fragmentSelectionSet),
-                    :%variableValues,
+                    :%variables,
                     :$visitedFragments,
                     :$document);
 
@@ -430,7 +431,7 @@ sub CollectFields(GraphQL::Object :$objectType,
                 my $fragmentGroupedFieldSet = CollectFields(
                     :$objectType,
                     :selectionSet(@fragmentSelectionSet),
-                    :%variableValues,
+                    :%variables,
                     :$visitedFragments,
                     :$document);
                 

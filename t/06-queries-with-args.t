@@ -1,0 +1,145 @@
+use v6;
+
+use lib 'lib';
+use GraphQL;
+use Hash::Ordered;
+use JSON::Fast;
+
+use Test;
+
+ok my $schema = graphql-schema('
+type User {
+  id: ID
+  name: String
+  birthday: String
+  status: Boolean
+}
+
+type Root {
+  allusers(start: ID = 0, count: ID = 1): [User]
+  user(id: ID): User
+}
+
+schema {
+  query: Root
+}
+'), 'Build Schema';
+
+class User
+{
+    has $.id;
+    has $.name;
+    has $.birthday;
+    has $.status;
+}
+
+my @users =
+    User.new(id => 0,
+             name => 'Gilligan',
+             birthday => 'Friday',
+             status => True),
+    User.new(id => 1,
+             name => 'Skipper',
+             birthday => 'Monday',
+             status => False),
+    User.new(id => 2,
+             name => 'Professor',
+             birthday => 'Tuesday',
+             status => True),
+    User.new(id => 3,
+             name => 'Ginger',
+             birthday => 'Wednesday',
+             status => True),
+    User.new(id => 4,
+             name => 'Mary Anne',
+             birthday => 'Thursday',
+             status => True);
+
+$schema.resolvers(
+{
+    Root =>
+    {
+        allusers =>
+            sub (Int :$start, Int :$count)
+            {
+                @users[$start ..^ $start+$count]
+            },
+        user =>
+            sub (Int :$id)
+            {
+                @users[$id]
+            }
+    }
+});
+
+my @testcases = 
+'Query for user 3',
+
+'{ user(id: 3) { id, name } }',
+
+{},
+
+{
+    data => {
+        user => Hash::Ordered.new(
+            'id', 3,
+            'name', 'Ginger'
+        )
+    }
+},
+
+#----------------------------------------------------------------------
+'Query for first user in allusers',
+
+'{ allusers { id name } }',
+
+{},
+
+{
+    data => {
+        allusers => [
+            Hash::Ordered.new(
+                'id', 0,
+                'name', 'Gilligan'
+            )
+        ]
+    }
+},
+
+#----------------------------------------------------------------------
+'Query for 2 users starting with user 3',
+
+'{ allusers(start: 3, count: 2) { name status } }',
+
+{},
+
+{
+    data => {
+        allusers => [
+            Hash::Ordered.new(
+                'name', 'Ginger',
+                'status', True
+            ),
+            Hash::Ordered.new(
+                'name', 'Mary Anne',
+                'status', True
+            )
+        ]
+    }
+}
+;
+
+for @testcases -> $description, $query, %variables, %expected
+{
+    ok my $document = graphql-document($query), "parse $description";
+
+    ok my $ret = graphql-execute(:$schema, :$document, :%variables),
+    "execute $description";
+
+#   is-deeply $ret, %expected;
+
+    is to-json($ret), to-json(%expected),
+    "compare $description";
+}
+
+done-testing;
