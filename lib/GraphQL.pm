@@ -75,11 +75,11 @@ multi sub graphql-schema(Str $schemastring)
     return $schema;
 }
 
-sub graphql-document(Str $query)
+sub graphql-document(Str $query, :$schema)
     returns GraphQL::Document is export
 {
     GraphQL::Grammar.parse($query,
-                           actions => GraphQL::Actions.new,
+                           :actions(GraphQL::Actions.new(:$schema)),
                            rule => 'Document')
         or die "Failed to parse query";
 
@@ -116,9 +116,31 @@ sub graphql-execute(Str $query?,
         }
         when 'mutation'
         {
-            say "Mutate!";
+            return ExecuteMutation(:$operation,
+                                   :$schema,
+                                   variables => %coercedVariableValues,
+                                   :$objectValue,
+                                   :$document);
         }
     }
+}
+
+sub ExecuteMutation(GraphQL::Operation :$operation,
+                    GraphQL::Schema :$schema,
+                    :%variables,
+                    :$objectValue! is rw,
+                    GraphQL::Document:$document)
+{
+    # Serially!!
+    my $data = ExecuteSelectionSet(selectionSet => $operation.selectionset,
+                                   objectType => $schema.mutationType,
+                                   :$objectValue,
+                                   :%variables,
+                                   :$document);
+
+    return {
+        data => $data
+    };
 }
 
 sub CoerceVariableValues(GraphQL::Schema :$schema,
@@ -154,6 +176,7 @@ sub ExecuteQuery(GraphQL::Operation :$operation,
                  :%variables,
                  :$objectValue! is rw) returns Hash
 {
+    # Parallel!
     my $data = ExecuteSelectionSet(selectionSet => $operation.selectionset,
                                    objectType => $schema.queryType,
                                    :$objectValue,
@@ -163,7 +186,6 @@ sub ExecuteQuery(GraphQL::Operation :$operation,
     return {
         data => $data
     };
-
 }
 
 sub ExecuteSelectionSet(:@selectionSet,

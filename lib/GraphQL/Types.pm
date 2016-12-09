@@ -173,6 +173,18 @@ class GraphQL::Object is GraphQL::Type does HasFields
     }
 }
 
+class GraphQL::InputObject is GraphQL::Type does HasFields
+{
+    has Str $.kind = 'INPUT_OBJECT';
+
+    method Str
+    {
+        self.description-comment ~
+        "input $.name " ~
+        ~ "\{\n" ~ self.fields-str('  ') ~ "\n}\n"
+    }
+}
+
 class GraphQL::Union is GraphQL::Type
 {
     has $.kind = 'UNION';

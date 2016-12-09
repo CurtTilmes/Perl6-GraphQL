@@ -65,3 +65,5 @@ is-deeply $ret,
         'someextra', 'an extra field'
     )
 }, 'Compare results';
+
+done-testing;

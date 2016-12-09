@@ -191,6 +191,21 @@ method Value:sym<NullValue>($/)
     make 'null'
 }
 
+method ObjectValue($/)
+{
+    make %( $<ObjectField>».made );
+}
+
+method ObjectField($/)
+{
+    make $<Name>.made => $<Value>.made;
+}
+
+method Value:sym<ObjectValue>($/)
+{
+    make $<ObjectValue>.made;
+}
+
 method Type($/)
 {
     make $<NonNullType>.made // $<NamedType>.made // $<ListType>.made;
@@ -397,6 +412,16 @@ method ScalarDefinition($/)
     $!schema.addtype($o);
 }
 
+method InputDefinition($/)
+{
+    my $o = GraphQL::InputObject.new(name => $<Name>.made,
+                                     fields => $<FieldDefinitionList>.made);
+
+    $o.add-comment-description($/);
+
+    $!schema.addtype($o);
+}
+
 method TypeSchema($/)
 {
     #
@@ -454,9 +479,15 @@ method TypeSchema($/)
 method SchemaDefinition($/)
 {
     $!schema.query = $<SchemaQuery>.made;
+    $!schema.mutation = $<SchemaMutation>.made;
 }
 
 method SchemaQuery($/)
+{
+    make $<Name>.made;
+}
+
+method SchemaMutation($/)
 {
     make $<Name>.made;
 }
