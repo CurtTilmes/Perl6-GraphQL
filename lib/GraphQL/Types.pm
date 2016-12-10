@@ -182,15 +182,16 @@ class GraphQL::Object is GraphQL::Type does HasFields
     }
 }
 
-class GraphQL::InputObject is GraphQL::Type does HasFields
+class GraphQL::InputObject is GraphQL::Type
 {
     has Str $.kind = 'INPUT_OBJECT';
+    has GraphQL::InputValue @.inputFields;
 
     method Str
     {
         self.description-comment ~
         "input $.name " ~
-        ~ "\{\n" ~ self.fields-str('  ') ~ "\n}\n"
+        ~ "\{\n" ~ @!inputFields.map({.Str}).join("\n") ~ "\n}\n"
     }
 }
 
@@ -344,11 +345,12 @@ class GraphQL::Document
 
     method GetOperation($operationName)
     {
-        if $operationName.defined
+        if $operationName
         {
             return %!operations{$operationName}
-                if %!operations{$operationName}.defined;
-            die "Must provide an operation."
+                if %!operations{$operationName};
+
+            die "Must provide an operation.";
         }
 
         return %!operations.values.first if %!operations.elems == 1;

@@ -198,7 +198,12 @@ rule EnumValues { <EnumValue>+ }
 rule EnumValue { <Comment>* % <.ws> <Name> <Directives>? }
 
 rule InputDefinition
-{ <Comment>* % <.ws> 'input' <Name> <FieldDefinitionList> }
+{ <Comment>* % <.ws> 'input' <Name> <InputFieldDefinitionList> }
+
+rule InputFieldDefinitionList { '{' <InputFieldDefinition>+ '}' }
+
+rule InputFieldDefinition
+{ <Comment>* % <.ws> <Name> ':' <Type> <DefaultValue>? }
 
 rule SchemaDefinition { <Comment>* % <.ws> 
                         'schema' '{'

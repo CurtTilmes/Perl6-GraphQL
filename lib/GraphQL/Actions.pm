@@ -412,11 +412,35 @@ method ScalarDefinition($/)
 method InputDefinition($/)
 {
     my $o = GraphQL::InputObject.new(name => $<Name>.made,
-                                     fields => $<FieldDefinitionList>.made);
+        inputFields => $<InputFieldDefinitionList>.made);
 
     $o.add-comment-description($/);
 
     $!schema.addtype($o);
+}
+
+method InputFieldDefinitionList($/)
+{
+    make $<InputFieldDefinition>».made;
+}
+
+method InputFieldDefinition($/)
+{
+    my $f = GraphQL::InputValue.new(name => $<Name>.made,
+                                    defaultValue => $<DefaultValue>.made);
+
+    $f.add-comment-description($/);
+
+    if $<Type>.made ~~ Str
+    {
+        push @!fields-to-type, $<Type>.made => $f;
+    }
+    else
+    {
+	$f.type = $<Type>.made;
+    }
+
+    make $f;
 }
 
 method TypeSchema($/)

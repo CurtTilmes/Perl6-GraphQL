@@ -95,7 +95,11 @@ class GraphQL::Schema
 
     method queryType returns GraphQL::Object { %!types{$!query} }
 
-    method mutationType returns GraphQL::Object { %!types{$!mutation} }
+    method mutationType returns GraphQL::Object
+    {
+        return unless $!mutation and %!types{$!mutation};
+        %!types{$!mutation}
+    }
 
     method directives { [] }
 

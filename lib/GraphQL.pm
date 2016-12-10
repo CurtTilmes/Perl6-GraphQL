@@ -11,6 +11,10 @@ sub GraphQL-ExecuteRequest(Str $query?,
                     :%variables,
                     :$initialValue) is export
 {
+    die "Missing root query type $schema.query()"
+        unless $schema.queryType
+        and $schema.queryType.kind ~~ 'OBJECT';
+
     my $operation = $document.GetOperation($operationName);
 
     my %coercedVariableValues = CoerceVariableValues(:$schema,
@@ -23,10 +27,6 @@ sub GraphQL-ExecuteRequest(Str $query?,
     {
         when 'query'
         {
-            die "Missing root query type $schema.query()" 
-                unless $schema.queryType
-                and $schema.queryType.kind ~~ 'OBJECT';
-
             return ExecuteQuery(:$operation,
                                 :$schema,
                                 variables => %coercedVariableValues,
@@ -142,7 +142,8 @@ sub ExecuteSelectionSet(:@selectionSet,
                                           :$objectValue,
                                           :@fields,
                                           :$fieldType,
-                                          :%variables);
+                                          :%variables,
+                                          :$document);
         }
 
         $resultMap{$responseKey} = $responseValue;
@@ -155,7 +156,8 @@ sub ExecuteField(GraphQL::Object :$objectType,
                  :$objectValue! is rw,
                  :@fields,
                  GraphQL::Type :$fieldType,
-                 :%variables)
+                 :%variables,
+                 :$document)
 {
     my $field = @fields[0];
 
@@ -173,7 +175,8 @@ sub ExecuteField(GraphQL::Object :$objectType,
     return CompleteValue(:$fieldType,
                          :@fields,
                          :result($resolvedValue),
-                         :%variables);
+                         :%variables,
+                         :$document);
      
 }
 
@@ -202,7 +205,7 @@ sub ResolveFieldValue(GraphQL::Object :$objectType,
         return $objectValue."$fieldName"();
     }
 
-    die "No resolver for $objectType.name() or $fieldName";
+    return Nil;
 }
 
 sub call-with-right-args(Sub $sub, *%allargs)
@@ -229,7 +232,8 @@ sub call-with-right-args(Sub $sub, *%allargs)
 sub CompleteValue(GraphQL::Type :$fieldType,
                   :@fields,
                   :$result,
-                  :%variables)
+                  :%variables,
+                  :$document)
 {
     given $fieldType
     {
@@ -238,7 +242,8 @@ sub CompleteValue(GraphQL::Type :$fieldType,
             my $completedResult = CompleteValue(:fieldType($fieldType.ofType),
                                                 :@fields,
                                                 :$result,
-                                                :%variables);
+                                                :%variables,
+                                                :$document);
             
             die "Null in non-null type" unless $completedResult.defined;
 
@@ -254,7 +259,8 @@ sub CompleteValue(GraphQL::Type :$fieldType,
             return $result.map({CompleteValue(:fieldType($fieldType.ofType),
                                               :@fields,
                                               :result($_),
-                                              :%variables)});
+                                              :%variables,
+                                              :$document)});
         }
 
         when GraphQL::Scalar
@@ -275,7 +281,8 @@ sub CompleteValue(GraphQL::Type :$fieldType,
             return ExecuteSelectionSet(:selectionSet(@subSelectionSet),
                                        :$objectType,
                                        :$objectValue,
-                                       :%variables);
+                                       :%variables,
+                                       :$document);
         }
 
         default 
