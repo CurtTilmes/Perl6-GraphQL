@@ -53,7 +53,7 @@ query {
 }
 '), 'Make document';
 
-ok my $ret = GraphQL-ExecuteRequest(:$schema, :$document), 'Execute query';
+ok my $ret = $schema.execute(:$document), 'Execute query';
 
 is-deeply $ret, 
 {

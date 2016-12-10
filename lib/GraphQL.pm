@@ -2,210 +2,393 @@ use Hash::Ordered;
 
 unit module GraphQL;
 
-use GraphQL::Schema;
+use GraphQL::Introspection;
+use GraphQL::Grammar;
+use GraphQL::Actions;
+use GraphQL::Types;
 
-sub GraphQL-ExecuteRequest(Str $query?,
-                    GraphQL::Schema :$schema,
-                    GraphQL::Document :$document = $schema.document($query),
-                    Str :$operationName,
-                    :%variables,
-                    :$initialValue) is export
+my Set $defaultTypes = set $GraphQLInt, $GraphQLFloat, $GraphQLString,
+                           $GraphQLBoolean, $GraphQLID;
+
+class GraphQL::Schema
 {
-    die "Missing root query type $schema.query()"
-        unless $schema.queryType
-        and $schema.queryType.kind ~~ 'OBJECT';
+    has GraphQL::Type %!types;
+    has Str $.query is rw = 'Query';
+    has Str $.mutation is rw;
 
-    my $operation = $document.GetOperation($operationName);
-
-    my %coercedVariableValues = CoerceVariableValues(:$schema,
-                                                     :$operation,
-                                                     :%variables);
-
-    my $objectValue = $initialValue // 0;
-
-    given $operation.operation
+    multi method new(:$queryType, :$mutationType, :$resolvers, *@types)
     {
-        when 'query'
+        my $schema = GraphQL::Schema.bless;
+
+        $defaultTypes.keys.map({ $schema.addtype($_) });
+
+        my $actions = GraphQL::Actions.new(:$schema);
+
+        GraphQL::Grammar.parse($GraphQL-Introspection-Schema,
+                               :$actions,
+                               rule => 'TypeSchema')
+            or die "Failed to parse Introspection Schema";
+
+        for @types -> $type
         {
-            return ExecuteQuery(:$operation,
-                                :$schema,
-                                variables => %coercedVariableValues,
-                                :$objectValue,
-                                :$document);
+            $schema.addtype($type)
         }
-        when 'mutation'
+
+        if ($queryType)
         {
-            die "Missing root mutation type $schema.mutation()"
-                unless $schema.mutationType
-                and $schema.mutationType.kind ~~ 'OBJECT';
-
-            return ExecuteMutation(:$operation,
-                                   :$schema,
-                                   variables => %coercedVariableValues,
-                                   :$objectValue,
-                                   :$document);
+            $schema.query = $queryType if $queryType;
+            $schema!add-meta-fields;
         }
-    }
-}
 
-sub ExecuteMutation(GraphQL::Operation :$operation,
-                    GraphQL::Schema :$schema,
-                    :%variables,
-                    :$objectValue! is rw,
-                    GraphQL::Document:$document)
-{
-    # Serially!!
-    my $data = ExecuteSelectionSet(selectionSet => $operation.selectionset,
-                                   objectType => $schema.mutationType,
-                                   :$objectValue,
-                                   :%variables,
-                                   :$document);
-
-    return {
-        data => $data
-    };
-}
-
-sub CoerceVariableValues(GraphQL::Schema :$schema,
-                         GraphQL::Operation :$operation,
-                         :%variables)
-{
-    my %coercedValues;
-
-    for $operation.vars -> $v
-    {
-        unless %variables{$v.name}
+        if ($mutationType)
         {
-            if $v.defaultValue.defined
-            {
-                %coercedValues{$v.name} = $v.defaultValue;
-            }
-            if $v.type ~~ GraphQL::Non-Null
-            {
-                die "Must set value for Non-Nullable type $v.type.name() "
-                    ~ "for variable \$$v.name"
-            }
-            next;
+            $schema.mutation = $mutationType;
         }
-        %coercedValues{$v.name} = %variables{$v.name};
+
+        $schema.resolvers($resolvers) if $resolvers;
+
+        return $schema;
     }
 
-    return %coercedValues;
-}
+    multi method new(Str $schemastring, :$resolvers)
+    {
+        my $schema = GraphQL::Schema.new;
+        
+        my $actions = GraphQL::Actions.new(:$schema);
 
-sub ExecuteQuery(GraphQL::Operation :$operation,
-                 GraphQL::Schema :$schema,
-                 GraphQL::Document :$document,
-                 :%variables,
-                 :$objectValue! is rw) returns Hash
-{
-    # Parallel!
-    my $data = ExecuteSelectionSet(selectionSet => $operation.selectionset,
-                                   objectType => $schema.queryType,
-                                   :$objectValue,
-                                   :%variables,
-                                   :$document);
+        GraphQL::Grammar.parse($schemastring, :$actions, :rule('TypeSchema'))
+            or die "Failed to parse schema";
 
-    return {
-        data => $data
-    };
-}
+        $schema!add-meta-fields;
 
-sub ExecuteSelectionSet(:@selectionSet,
-                        GraphQL::Object :$objectType,
-                        :$objectValue! is rw,
+        $schema.resolvers($resolvers) if $resolvers;
+
+        return $schema;
+    }
+
+    method !add-meta-fields
+    {
+        self.queryType.addfield(GraphQL::Field.new(
+            name => '__type',
+            type => self.type('__Type'),
+            args => [ GraphQL::InputValue.new(
+                          name => 'name',
+                          type => GraphQL::Non-Null.new(
+                              ofType => $GraphQLString
+                              )
+                          )
+                    ],
+            resolver => sub (:$name) { self.type($name) }
+        ));
+
+        self.queryType.addfield(GraphQL::Field.new(
+            name => '__schema',
+            type => GraphQL::Non-Null.new(
+                ofType => self.type('__Schema')
+            ),
+            resolver => sub { self }
+        ));
+    }
+
+    method types { %!types.values }
+
+    method addtype(GraphQL::Type $newtype)
+    {
+	%!types{$newtype.name} = $newtype
+    }
+
+    method type($typename) { %!types{$typename} }
+
+    method queryType returns GraphQL::Object { %!types{$!query} }
+
+    method mutationType returns GraphQL::Object
+    {
+        return unless $!mutation and %!types{$!mutation};
+        %!types{$!mutation}
+    }
+
+    method directives { [] }
+
+    method Str
+    {
+        my $str = '';
+
+        for %!types.kv -> $typename, $type
+        {
+            next if $type ∈ $defaultTypes or $typename ~~ /^__/;
+            $str ~= $type.Str ~ "\n";
+        }
+
+        $str ~= "schema \{\n";
+	$str ~= "  query: $!query\n";
+        $str ~= "  mutation: $!mutation\n" if $!mutation;
+	$str ~= "}\n";
+    }
+
+    method document(Str $query) returns GraphQL::Document
+    {
+        my $grammar = GLOBAL::GraphQL::{'Grammar'};
+        my $actions = GLOBAL::GraphQL::{'Actions'};
+
+        $grammar.parse($query,
+                       :actions($actions.new(:schema(self))),
+                       rule => 'Document')
+            or die "Failed to parse query";
+        
+        $/.made;
+    }
+
+    method resolvers(%resolvers)
+    {
+        for %resolvers.kv -> $type, $obj
+        {
+            die "Undefined object $type" unless %!types{$type};
+
+            if ($obj ~~ Associative)
+            {
+                for $obj.kv -> $field, $resolver
+                {
+                    die "Undefined field $field for $type"
+                        unless %!types{$type}.field($field);
+                    
+                    %!types{$type}.field($field).resolver = $resolver;
+                }
+            }
+            else
+            {
+                %!types{$type}.resolver = $obj;
+            }
+        }
+    }
+
+    # ExecuteRequest() == $schema.execute()
+    method execute(Str $query?,
+                   GraphQL::Document :$document = self.document($query),
+                   Str :$operationName,
+                   :%variables,
+                   :$initialValue)
+    {
+        die "Missing root query type $!query()"
+            unless self.queryType
+            and self.queryType.kind ~~ 'OBJECT';
+
+        my $operation = $document.GetOperation($operationName);
+
+        my %coercedVariableValues = CoerceVariableValues(:$operation,
+                                                         :%variables);
+
+        my $objectValue = $initialValue // 0;
+
+        given $operation.operation
+        {
+            when 'query'
+            {
+                return self.ExecuteQuery(:$operation,
+                                         variables => %coercedVariableValues,
+                                         :$objectValue,
+                                         :$document);
+            }
+            when 'mutation'
+            {
+                die "Missing root mutation type $!mutation"
+                    unless self.mutationType
+                    and self.mutationType.kind ~~ 'OBJECT';
+
+                return self.ExecuteMutation(:$operation,
+                                            variables => %coercedVariableValues,
+                                            :$objectValue,
+                                            :$document);
+            }
+        }
+    }
+
+    method ExecuteMutation(GraphQL::Operation :$operation,
+                           :%variables,
+                           :$objectValue! is rw,
+                           GraphQL::Document:$document)
+    {
+        # Serially!!
+        my $data = self.ExecuteSelectionSet(selectionSet =>
+                                            $operation.selectionset,
+                                            objectType => $.mutationType,
+                                            :$objectValue,
+                                            :%variables,
+                                            :$document);
+
+        return {
+            data => $data
+        };
+    }
+
+    method ExecuteQuery(GraphQL::Operation :$operation,
+                        GraphQL::Document :$document,
                         :%variables,
-                        GraphQL::Document :$document)
-{
-    my $groupedFieldSet = CollectFields(:$objectType,
-                                        :@selectionSet,
-                                        :%variables,
-                                        :$document);
-
-    my $resultMap = Hash::Ordered.new;
-
-    for $groupedFieldSet.kv -> $responseKey, @fields
+                        :$objectValue! is rw) returns Hash
     {
-        my $fieldName = @fields[0].name;
+        # Parallel!
+        my $data = self.ExecuteSelectionSet(selectionSet =>
+                                            $operation.selectionset,
+                                            objectType => self.queryType,
+                                            :$objectValue,
+                                            :%variables,
+                                            :$document);
 
-        my $responseValue;
-
-        if ($fieldName eq '__typename')  # Maybe I should do this elsewhere?
-        {
-            $responseValue = $objectType.name;
-        }
-        else
-        {
-            my $fieldType = $objectType.field($fieldName).type or next;
-
-            $responseValue = ExecuteField(:$objectType, 
-                                          :$objectValue,
-                                          :@fields,
-                                          :$fieldType,
-                                          :%variables,
-                                          :$document);
-        }
-
-        $resultMap{$responseKey} = $responseValue;
+        return {
+            data => $data
+        };
     }
 
-    return $resultMap;
-}
+    method ExecuteSelectionSet(:@selectionSet,
+                               GraphQL::Object :$objectType,
+                               :$objectValue! is rw,
+                               :%variables,
+                               GraphQL::Document :$document)
+    {
+        my $groupedFieldSet = CollectFields(:$objectType,
+                                            :@selectionSet,
+                                            :%variables,
+                                            :$document);
 
-sub ExecuteField(GraphQL::Object :$objectType,
-                 :$objectValue! is rw,
-                 :@fields,
-                 GraphQL::Type :$fieldType,
-                 :%variables,
-                 :$document)
-{
-    my $field = @fields[0];
+        my $resultMap = Hash::Ordered.new;
 
-    my $fieldName = $field.name;
+        for $groupedFieldSet.kv -> $responseKey, @fields
+        {
+            my $fieldName = @fields[0].name;
 
-    my %argumentValues = CoerceArgumentValues(:$objectType,
-                                              :$field,
-                                              :%variables);
+            my $responseValue;
 
-    my $resolvedValue = ResolveFieldValue(:$objectType,
-                                          :$objectValue,
-                                          :$fieldName,
-                                          :%argumentValues);
+            if ($fieldName eq '__typename')
+            {
+                $responseValue = $objectType.name;
+            }
+            else
+            {
+                my $fieldType = $objectType.field($fieldName).type or next;
 
-    return CompleteValue(:$fieldType,
+                $responseValue = self.ExecuteField(:$objectType, 
+                                                   :$objectValue,
+                                                   :@fields,
+                                                   :$fieldType,
+                                                   :%variables,
+                                                   :$document);
+            }
+
+            $resultMap{$responseKey} = $responseValue;
+        }
+
+        return $resultMap;
+    }
+
+    method ExecuteField(GraphQL::Object :$objectType,
+                        :$objectValue! is rw,
+                        :@fields,
+                        GraphQL::Type :$fieldType,
+                        :%variables,
+                        :$document)
+    {
+        my $field = @fields[0];
+
+        my $fieldName = $field.name;
+
+        my %argumentValues = CoerceArgumentValues(:$objectType,
+                                                  :$field,
+                                                  :%variables);
+
+        my $resolvedValue = ResolveFieldValue(:$objectType,
+                                              :$objectValue,
+                                              :$fieldName,
+                                              :%argumentValues);
+
+        return self.CompleteValue(:$fieldType,
+                                  :@fields,
+                                  :result($resolvedValue),
+                                  :%variables,
+                                  :$document);
+    }
+
+    method CompleteValue(GraphQL::Type :$fieldType,
                          :@fields,
-                         :result($resolvedValue),
+                         :$result,
                          :%variables,
-                         :$document);
-     
+                         :$document)
+    {
+        given $fieldType
+        {
+            when GraphQL::Non-Null
+            {
+                my $completedResult = 
+                    self.CompleteValue(:fieldType($fieldType.ofType),
+                                       :@fields,
+                                       :$result,
+                                       :%variables,
+                                       :$document);
+            
+                die "Null in non-null type" unless $completedResult.defined;
+
+                return $completedResult;
+            }
+        
+            return unless $result.defined;
+
+            when GraphQL::List
+            {
+                die "Must return a List" unless $result ~~ List | Seq;
+                
+                return $result.map({ self.CompleteValue(
+                                         :fieldType($fieldType.ofType),
+                                         :@fields,
+                                         :result($_),
+                                         :%variables,
+                                         :$document)});
+            }
+
+            when GraphQL::Scalar
+            {
+                return $result // Nil;
+            }
+
+            when GraphQL::Object | GraphQL::Interface | GraphQL::Union
+            {
+                my $objectType = * ~~ GraphQL::Object 
+                    ?? $fieldType
+                    !! self.ResolveAbstractType(:$fieldType, :$result);
+
+                my @subSelectionSet = MergeSelectionSets(:@fields);
+
+                my $objectValue = $result;
+
+                return self.ExecuteSelectionSet(:selectionSet(@subSelectionSet),
+                                                :$objectType,
+                                                :$objectValue,
+                                                :%variables,
+                                                :$document);
+            }
+
+            default 
+            {
+                die "Complete Value Unknown Type";
+            }
+        }
+
+        return $result;
+    }
+
+    method ResolveAbstractType(:$fieldType, :$results)
+    {
+        die "ResolveAbstractType";
+    }
+
 }
 
-sub ResolveFieldValue(GraphQL::Object :$objectType,
-                      :$objectValue! is rw,
-                      :$fieldName,
-                      :%argumentValues)
+sub MergeSelectionSets(:@fields)
 {
-    my $field = $objectType.field($fieldName) or return;
-
-    if not $objectValue and $objectType.resolver
+    gather
     {
-        $objectValue = call-with-right-args($objectType.resolver,
-                                            |%argumentValues);
+        for @fields -> $field
+        {
+            take $_ for $field.selectionset;
+        }
     }
-
-    if $field.resolver
-    {
-        return call-with-right-args($field.resolver,
-                                    :$objectValue,
-                                    |%argumentValues);
-    }
-
-    if $objectValue.^can($fieldName)
-    {
-        return $objectValue."$fieldName"();
-    }
-
-    return Nil;
 }
 
 sub call-with-right-args(Sub $sub, *%allargs)
@@ -229,85 +412,30 @@ sub call-with-right-args(Sub $sub, *%allargs)
     $sub(|%args);
 }
 
-sub CompleteValue(GraphQL::Type :$fieldType,
-                  :@fields,
-                  :$result,
-                  :%variables,
-                  :$document)
+sub CoerceVariableValues(GraphQL::Operation :$operation,
+                         :%variables)
 {
-    given $fieldType
+    my %coercedValues;
+
+    for $operation.vars -> $v
     {
-        when GraphQL::Non-Null
+        unless %variables{$v.name}
         {
-            my $completedResult = CompleteValue(:fieldType($fieldType.ofType),
-                                                :@fields,
-                                                :$result,
-                                                :%variables,
-                                                :$document);
-            
-            die "Null in non-null type" unless $completedResult.defined;
-
-            return $completedResult;
+            if $v.defaultValue.defined
+            {
+                %coercedValues{$v.name} = $v.defaultValue;
+            }
+            if $v.type ~~ GraphQL::Non-Null
+            {
+                die "Must set value for Non-Nullable type $v.type.name() "
+                    ~ "for variable \$$v.name"
+            }
+            next;
         }
-        
-        return Nil unless $result.defined;
-
-        when GraphQL::List
-        {
-            die "Must return a List" unless $result ~~ List | Seq;
-
-            return $result.map({CompleteValue(:fieldType($fieldType.ofType),
-                                              :@fields,
-                                              :result($_),
-                                              :%variables,
-                                              :$document)});
-        }
-
-        when GraphQL::Scalar
-        {
-            return $result // Nil;
-        }
-
-        when GraphQL::Object | GraphQL::Interface | GraphQL::Union
-        {
-            my $objectType = * ~~ GraphQL::Object 
-                ?? $fieldType
-                !! ResolveAbstractType(:$fieldType, :$result);
-
-            my @subSelectionSet = MergeSelectionSets(:@fields);
-
-            my $objectValue = $result;
-
-            return ExecuteSelectionSet(:selectionSet(@subSelectionSet),
-                                       :$objectType,
-                                       :$objectValue,
-                                       :%variables,
-                                       :$document);
-        }
-
-        default 
-        {
-            die "Complete Value Unknown Type";
-        }
+        %coercedValues{$v.name} = %variables{$v.name};
     }
 
-    return $result;
-}
-
-sub ResolveAbstractType(:$fieldType, :$results)
-{
-    die "ResolveAbstractType";
-}
-
-sub MergeSelectionSets(:@fields)
-{
-    gather
-    {
-        for @fields -> $field
-        {
-            take $_ for $field.selectionset;
-        }
-    }
+    return %coercedValues;
 }
 
 #
@@ -420,3 +548,30 @@ sub CollectFields(GraphQL::Object :$objectType,
 
     return $groupedFields;
 }
+
+sub ResolveFieldValue(GraphQL::Object :$objectType,
+                      :$objectValue! is rw,
+                      :$fieldName,
+                      :%argumentValues)
+{
+    my $field = $objectType.field($fieldName) or return;
+
+    if not $objectValue and $objectType.resolver
+    {
+        $objectValue = call-with-right-args($objectType.resolver,
+                                            |%argumentValues);
+    }
+
+    if $field.resolver
+    {
+        return call-with-right-args($field.resolver,
+                                    :$objectValue,
+                                    |%argumentValues);
+    }
+
+    if $objectValue.^can($fieldName)
+    {
+        return $objectValue."$fieldName"();
+    }
+}
+
