@@ -263,7 +263,9 @@ class GraphQL::Schema
             }
             else
             {
-                my $fieldType = $objectType.field($fieldName).type or next;
+                my $fieldType = $objectType.field($fieldName).type
+                    or die qq{Cannot query field "$fieldName" } ~
+                           qq{on type "$objectType.name()".};
 
                 $responseValue = self.ExecuteField(:$objectType, 
                                                    :$objectValue,
@@ -369,15 +371,12 @@ class GraphQL::Schema
                 die "Complete Value Unknown Type";
             }
         }
-
-        return $result;
     }
 
     method ResolveAbstractType(:$fieldType, :$results)
     {
         die "ResolveAbstractType";
     }
-
 }
 
 sub MergeSelectionSets(:@fields)
