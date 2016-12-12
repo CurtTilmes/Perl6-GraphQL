@@ -35,7 +35,7 @@ this example, it is just a string.
 
 Though not (yet) part of the standard, another frequently implemented
 extension is the ability to add descriptions to types and fields with
-# comments.  If you look at the
+\# comments.  If you look at the
 [eg/users.schema](https://github.com/golpa/Perl6-GraphQL/blob/master/eg/users.schema)
 file, you'll see # descriptions for some of the types and fields.
 Those descriptions can be queried with the GraphQL introspection
@@ -56,8 +56,7 @@ type Query {
 ```
 
 So you can list *count* users starting with a specific *id*, or just
-query a single user.  (Really the same as a listusers with count of
-1.).
+query a single user.
 
 ## Resolvers
 
@@ -106,7 +105,7 @@ my $resolvers =
 
 *user()* just returns the user specified by $id, and listusers graphs
  *count* of them starting with *start* and returns them in an *Array*
- *which gets mapped to the GraphQL List.
+which gets mapped to the GraphQL List.
 
 Then create your GraphQL::Schema :
 
@@ -116,7 +115,7 @@ my $schema = GraphQL::Schema.new(...schema here..., resolvers => $resolvers);
 
 If you put your schema in a separate file, you can plug it in easily
 with IO.slurp (see the
-[example](https://github.com/golpa/Perl6-GraphQL/blob/master/eg/usersserver.pl).
+[example](https://github.com/golpa/Perl6-GraphQL/blob/master/eg/usersserver.pl)).
 
 
 Running this server under
@@ -135,7 +134,7 @@ schema interactively, and execute our queries.  For example:
 to see the name and birthday of user 0.
 
 Note that in the **hello** example, the resolver was specified down to
-the *Field* level returning a *Scalar* (*String), while here, the
+the *Field* level returning a *Scalar* (*String*), while here, the
 resolvers return an *Object* or a *List* of *Object*s.  If you return
 a Perl 6 Class, it must include methods for resolving each field of
 the type.  (e.g. here, we have methods for name(), birthday(),
@@ -153,7 +152,7 @@ only by trusted, authenticated, authorized users.)
 
 In reality, there isn't really anything special about Mutations, and
 if you wanted to do an update with a normal query, nothing technical
-would stop you.  It is highly recommended, however that you group such
+would stop you.  It is highly recommended, however, that you group such
 queries and explicitly declare them as mutations.  This has a few real
 consequences.  For one, the server will always execute mutations
 serially though it is allowed to execute normal queries in parallel.
