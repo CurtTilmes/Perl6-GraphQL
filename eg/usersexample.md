@@ -103,9 +103,9 @@ my $resolvers =
 };
 ```
 
-*user()* just returns the user specified by $id, and listusers graphs
- *count* of them starting with *start* and returns them in an *Array*
-which gets mapped to the GraphQL List.
+*user()* just returns the user specified by $id, and *listusers()*
+returns *count* of them starting with id *start* and returns them in
+an *Array* which gets mapped to the GraphQL *List*.
 
 Then create your GraphQL::Schema :
 
