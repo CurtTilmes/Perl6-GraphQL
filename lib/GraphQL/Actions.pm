@@ -61,7 +61,7 @@ method VariableDefinitions($/)
 
 method VariableDefinition($/)
 {
-    die "Unknown type $<Type>.made" unless $!schema.type($<Type>.made);
+    die "Unknown type $<Type>.made()" unless $<Type>.made ~~ GraphQL::Type;
 
     make GraphQL::Variable.new(
         name => $<Variable>.<Name>.made,
@@ -128,7 +128,7 @@ method FragmentDefinition($/)
 {
     $!q.fragments{$<FragmentName>.made} = GraphQL::Fragment.new(
         name         => $<FragmentName>.made,
-        onType       => $<TypeCondition>.made,
+        onType       => $<TypeCondition>.made.name,
         directives   => $<Directives>.made,
         selectionset => $<SelectionSet>.made
     );
@@ -211,7 +211,7 @@ method Type($/)
 
 method NamedType($/)
 {
-    make $<Name>.Str;
+    make $!schema.type($<Name>.Str) // $<Name>.Str;
 }
 
 method ListType($/)
@@ -390,7 +390,14 @@ method ArgumentDefinition($/)
     my $t = GraphQL::InputValue.new(name => $<Name>.made,
                                     defaultValue => $<DefaultValue>.made);
 
-    push @!fields-to-type, $<Type>.made => $t;
+    if $<Type>.made ~~ Str
+    {
+        push @!fields-to-type, $<Type>.made => $t;
+    }
+    else
+    {
+        $t.type = $<Type>.made;
+    }
 
     make $t;
 }

@@ -233,7 +233,7 @@ ok my $User = GraphQL::Object.new(
 ), 'Make Object User';
 
 ok my $schema = GraphQL::Schema.new(
-    queryType => 'Root',
+    query => 'Root',
     $Entity,
     $Foo,
     $Goo,

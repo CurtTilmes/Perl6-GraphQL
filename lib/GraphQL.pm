@@ -16,11 +16,11 @@ class GraphQL::Schema
     has Str $.query is rw = 'Query';
     has Str $.mutation is rw;
 
-    multi method new(:$queryType, :$mutationType, :$resolvers, *@types)
+    multi method new(:$query, :$mutation, :$resolvers, *@types)
     {
         my $schema = GraphQL::Schema.bless;
 
-        $defaultTypes.keys.map({ $schema.addtype($_) });
+        $schema.addtype($defaultTypes.keys);
 
         my $actions = GraphQL::Actions.new(:$schema);
 
@@ -29,20 +29,17 @@ class GraphQL::Schema
                                rule => 'TypeSchema')
             or die "Failed to parse Introspection Schema";
 
-        for @types -> $type
-        {
-            $schema.addtype($type)
-        }
+        $schema.addtype(|@types) if @types;
 
-        if ($queryType)
+        if ($query)
         {
-            $schema.query = $queryType if $queryType;
+            $schema.query = $query;
             $schema!add-meta-fields;
         }
 
-        if ($mutationType)
+        if ($mutation)
         {
-            $schema.mutation = $mutationType;
+            $schema.mutation = $mutation;
         }
 
         $schema.resolvers($resolvers) if $resolvers;
@@ -92,9 +89,12 @@ class GraphQL::Schema
 
     method types { %!types.values }
 
-    method addtype(GraphQL::Type $newtype)
+    method addtype(*@newtypes)
     {
-	%!types{$newtype.name} = $newtype
+        for @newtypes -> $newtype
+        {
+            %!types{$newtype.name} = $newtype;
+        }
     }
 
     method type($typename) { %!types{$typename} }
