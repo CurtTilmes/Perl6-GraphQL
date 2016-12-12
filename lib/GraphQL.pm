@@ -15,8 +15,9 @@ class GraphQL::Schema
     has GraphQL::Type %!types;
     has Str $.query is rw = 'Query';
     has Str $.mutation is rw;
+    has Str $.subscription is rw;
 
-    multi method new(:$query, :$mutation, :$resolvers, *@types)
+    multi method new(:$query, :$mutation, :$subscription, :$resolvers, *@types)
     {
         my $schema = GraphQL::Schema.bless;
 
@@ -31,15 +32,20 @@ class GraphQL::Schema
 
         $schema.addtype(|@types) if @types;
 
-        if ($query)
+        if $query
         {
             $schema.query = $query;
             $schema!add-meta-fields;
         }
 
-        if ($mutation)
+        if $mutation
         {
             $schema.mutation = $mutation;
+        }
+
+        if $subscription
+        {
+            $schema.subscription = $subscription;
         }
 
         $schema.resolvers($resolvers) if $resolvers;
@@ -87,7 +93,8 @@ class GraphQL::Schema
         ));
     }
 
-    method types { %!types.values }
+    method types { %!types.values.grep: {.name !~~ /^__/
+                                         and not $_ ∈ $defaultTypes} }
 
     method addtype(*@newtypes)
     {
@@ -105,6 +112,12 @@ class GraphQL::Schema
     {
         return unless $!mutation and %!types{$!mutation};
         %!types{$!mutation}
+    }
+
+    method subscriptionType returns GraphQL::Object
+    {
+        return unless $!subscription and %!types{$!subscription};
+        %!types{$!subscription}
     }
 
     method directives { [] }
