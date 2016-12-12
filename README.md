@@ -85,7 +85,7 @@ structure with JSON and send it back.
 
 There is one additional feature.  If it receives a GET request to
 "/graphql", send back the
-(GraphiQL)[https://github.com/graphql/graphiql] graphical interactive
+[GraphiQL](https://github.com/graphql/graphiql) graphical interactive
 in-browser GraphQL IDE.
 
 ![](eg/hello-graphiql.png)
