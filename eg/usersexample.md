@@ -12,7 +12,7 @@ http://graphql.org.  There is also a cheat sheet that can be useful
 
 You start by describing your __Schema__ in terms of data types.
 Starting with the GraphQL core types (String, Int, Float, Boolean,
-ID), possibly modified (List, Non-Null), and built into a set of
+ID), possibly modified ([List], Non-Null!), and built into a set of
 Object Types.  You can also define types that are Unions of other
 types or Enum enumerations of pre-defined values.
 
@@ -179,8 +179,6 @@ type Mutation {
   updateuser(id: ID!, userinput: UserInput!): User
 }
 ```
-
-(! means Non-Null)
 
 and implement some matching resolvers for those:
 
