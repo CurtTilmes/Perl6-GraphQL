@@ -1,23 +1,10 @@
-use Bailador;
 use GraphQL;
-use GraphQL::GraphiQL;
-
 use JSON::Fast;
 
-my $schema = GraphQL::Schema.new('
-type Query {
-  hello: String
-}',
-resolvers => 
+my $schema = GraphQL::Schema.new('type Query { hello: String }',
+    resolvers => { Query => { hello => sub { 'Hello World' } } });
+
+sub MAIN(Str $query)
 {
-    Query => { hello => sub { 'Hello World' } }
+    say to-json $schema.execute($query);
 }
-);
-
-get '/graphql' => sub { $GraphiQL }
-
-post '/graphql' => sub {
-    to-json($schema.execute(from-json(request.body)<query>));
-}
-
-baile;
