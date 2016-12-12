@@ -38,10 +38,11 @@ my $resolvers =
 {
     Query =>
     {
-        allusers => sub (:$start, :$count)
+        listusers => sub (:$start, Int :$count)
         {
             @users[$start ..^ $start+$count]
         },
+
         user => sub (:$id)
         {
             @users[$id]
@@ -54,6 +55,7 @@ my $resolvers =
             push @users, User.new(id => @users.elems, |%newuser);
             return @users.elems - 1;
         },
+
         updateuser => sub (:$id, :%userinput)
         {
             for %userinput.kv -> $k, $v

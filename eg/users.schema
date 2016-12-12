@@ -21,7 +21,7 @@ input UserInput {
 
 # Top level queries.
 type Query {
-  allusers(start: ID = 0, count: ID = "1"): [User]
+  listusers(start: ID = "0", count: Int = "1"): [User]
   user(id: ID!): User
 }
 
