@@ -1,0 +1,38 @@
+# User is the main type for the server.
+type User {
+  # id is the unique identifier for this User.
+  id: ID!
+  # name is the name of this user.
+  name: String
+  # birthday doesn't have any real format, it is just another string.
+  birthday: String
+  # status doesn't mean anything, just a boolean field you can
+  # set to true or false
+  status: Boolean
+}
+
+# UserInput is a special input type you can supply a user input object with.
+# For now you get a hash.  Maybe we could auto-bless these into real classes?
+input UserInput {
+  name: String
+  birthday: String
+  status: Boolean
+}
+
+# Top level queries.
+type Query {
+  allusers(start: ID = 0, count: ID = "1"): [User]
+  user(id: ID!): User
+}
+
+# Top level mutations.
+type Mutation {
+  adduser(newuser: UserInput!): ID
+  updateuser(id: ID!, userinput: UserInput!): User
+}
+
+# Specify the main top level objects for the schema.
+schema {
+  query: Query
+  mutation: Mutation
+}
