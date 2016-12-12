@@ -205,6 +205,47 @@ See the full schema in
 and the example Bailador server in
 [usersserver.pl](https://github.com/golpa/Perl6-GraphQL/blob/master/eg/usersserver.pl).
 
+## Some sample queries
+
+List the first three users, with their names:
+```
+{
+  listusers(count:3) {
+    name
+  }
+}
+```
+
+Get the birthday and status for user 2:
+```
+{
+  user(id: 2){
+    birthday
+    status
+  }
+}
+```
+
+Add a new user named "John" (null status and birthday because they
+aren't specified)
+```
+mutation {
+  adduser(newuser: {name: "John"})
+}
+```
+
+Set John's birthday to "Every Year", and return his name and birthday:
+```
+mutation {
+  updateuser(id: "5", userinput: { birthday: "Every Year" }) {
+    name
+    birthday
+  }
+}
+```
+
+## Notes
+
 Again, this isn't really a production quality server.  You should do
 more with authentication/authorization, sessions, setting
 content-types, etc.  This server also ignores variables supplied by
