@@ -63,7 +63,7 @@ my $resolvers =
                 @users[$id]."$k"() = $v;
             }
 
-            @users[$id]
+            return @users[$id]
         }
     }
 };

@@ -97,3 +97,5 @@ execute GraphQL queries.
 A real production implementation would do a lot more, setting
 content-types, taking queries on GET as well as POST, etc.
 
+See [eg/usersexample.md](https://github.com/golpa/Perl6-GraphQL/blob/master/eg/usersexample.md) for a more complicated example.
+
