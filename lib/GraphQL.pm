@@ -187,61 +187,18 @@ class GraphQL::Schema
 
         my $operation = $document.GetOperation($operationName);
 
+        my $selectionSet = $operation.selectionset;
+
         my %coercedVariableValues = CoerceVariableValues(:$operation,
                                                          :%variables);
 
         my $objectValue = $initialValue // 0;
 
-        given $operation.operation
-        {
-            when 'query'
-            {
-                return self.ExecuteQuery(:$operation,
-                                         variables => %coercedVariableValues,
-                                         :$objectValue,
-                                         :$document);
-            }
-            when 'mutation'
-            {
-                die "Missing root mutation type $!mutation"
-                    unless self.mutationType
-                    and self.mutationType.kind ~~ 'OBJECT';
+        my $objectType = $operation.operation eq 'mutation'
+                         ?? $.mutationType !! $.queryType;
 
-                return self.ExecuteMutation(:$operation,
-                                            variables => %coercedVariableValues,
-                                            :$objectValue,
-                                            :$document);
-            }
-        }
-    }
-
-    method ExecuteMutation(GraphQL::Operation :$operation,
-                           :%variables,
-                           :$objectValue! is rw,
-                           GraphQL::Document:$document)
-    {
-        # Serially!!
-        my $data = self.ExecuteSelectionSet(selectionSet =>
-                                            $operation.selectionset,
-                                            objectType => $.mutationType,
-                                            :$objectValue,
-                                            :%variables,
-                                            :$document);
-
-        return {
-            data => $data
-        };
-    }
-
-    method ExecuteQuery(GraphQL::Operation :$operation,
-                        GraphQL::Document :$document,
-                        :%variables,
-                        :$objectValue! is rw) returns Hash
-    {
-        # Parallel!
-        my $data = self.ExecuteSelectionSet(selectionSet =>
-                                            $operation.selectionset,
-                                            objectType => self.queryType,
+        my $data = self.ExecuteSelectionSet(:$selectionSet,
+                                            :$objectType,
                                             :$objectValue,
                                             :%variables,
                                             :$document);
