@@ -408,27 +408,6 @@ sub MergeSelectionSets(:@fields)
     }
 }
 
-sub call-with-right-args(Sub $sub, *%allargs)
-{
-    my %args;
-    for $sub.signature.params -> $p
-    {
-        if ($p.named)
-        {
-            for $p.named_names -> $param_name
-            {
-                if %allargs{$param_name}:exists
-                {
-                    %args{$param_name} = %allargs{$param_name};
-                    last;
-                }
-            }
-        }
-    }
-
-    $sub(|%args);
-}
-
 sub CoerceVariableValues(GraphQL::Operation :$operation,
                          :%variables)
 {
@@ -566,6 +545,27 @@ sub CollectFields(GraphQL::Object :$objectType,
     return $groupedFields;
 }
 
+sub call-with-right-args(Sub $sub, *%allargs)
+{
+    my %args;
+    for $sub.signature.params -> $p
+    {
+        if ($p.named)
+        {
+            for $p.named_names -> $param_name
+            {
+                if %allargs{$param_name}:exists
+                {
+                    %args{$param_name} = %allargs{$param_name};
+                    last;
+                }
+            }
+        }
+    }
+
+    $sub(|%args);
+}
+
 sub ResolveFieldValue(GraphQL::Object :$objectType,
                       :$objectValue! is rw,
                       :$fieldName,
@@ -591,4 +591,3 @@ sub ResolveFieldValue(GraphQL::Object :$objectType,
         return $objectValue."$fieldName"();
     }
 }
-
