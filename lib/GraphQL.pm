@@ -7,6 +7,7 @@ use GraphQL::Grammar;
 use GraphQL::Actions;
 use GraphQL::Types;
 
+# A set to easily check for membership later
 my Set $defaultTypes = set $GraphQLInt, $GraphQLFloat, $GraphQLString,
                            $GraphQLBoolean, $GraphQLID;
 
@@ -18,6 +19,7 @@ class GraphQL::Schema
     has Str $.subscription is rw;
 
     multi method new(:$query, :$mutation, :$subscription, :$resolvers, *@types)
+        returns GraphQL::Schema
     {
         my $schema = GraphQL::Schema.bless;
 
@@ -54,6 +56,7 @@ class GraphQL::Schema
     }
 
     multi method new(Str $schemastring, :$resolvers)
+        returns GraphQL::Schema
     {
         my $schema = GraphQL::Schema.new;
         
@@ -104,7 +107,7 @@ class GraphQL::Schema
         }
     }
 
-    method type($typename) { %!types{$typename} }
+    method type($typename) returns GraphQL::Type { %!types{$typename} }
 
     method queryType returns GraphQL::Object { %!types{$!query} }
 
@@ -140,12 +143,9 @@ class GraphQL::Schema
 
     method document(Str $query) returns GraphQL::Document
     {
-        my $grammar = GLOBAL::GraphQL::{'Grammar'};
-        my $actions = GLOBAL::GraphQL::{'Actions'};
-
-        $grammar.parse($query,
-                       :actions($actions.new(:schema(self))),
-                       rule => 'Document')
+        GraphQL::Grammar.parse($query,
+                               :actions(GraphQL::Actions.new(:schema(self))),
+                               rule => 'Document')
             or die "Failed to parse query";
         
         $/.made;
