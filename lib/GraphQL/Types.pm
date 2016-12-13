@@ -370,13 +370,3 @@ class GraphQL::Document
         ~ "\n";
     }
 }
-
-class GraphQL::Response
-{
-    has GraphQL::Type $.type;
-    has $.value;
-
-    method to-json returns Str
-    {
-    }
-}
