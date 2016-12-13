@@ -27,8 +27,8 @@ has @!lists-to-type;   # These take lists of types
 
 has GraphQL::Document $!q = GraphQL::Document.new;
 
-# Adds types to the supplied schema as they are parsed
 has $.schema;
+has GraphQL::Type @!newtypes;
 
 method Document($/)
 {
@@ -251,7 +251,8 @@ method InterfaceDefinition($/)
 
     $i.add-comment-description($/);
 
-    $!schema.addtype($i);
+    push @!newtypes, $i;
+    make $i;
 }
 
 method FieldDefinitionList($/)
@@ -304,13 +305,14 @@ method ObjectTypeDefinition($/)
 
     $o.add-comment-description($/);
 
-    $!schema.addtype($o);
-
     if $<ImplementsDefinition>.made
     {
         push @!lists-to-type, 
              ($<ImplementsDefinition>.made => $o);
     }
+
+    push @!newtypes, $o;
+    make $o;
 }
 
 method ImplementsDefinition($/)
@@ -324,9 +326,10 @@ method UnionDefinition($/)
 
     $u.add-comment-description($/);
 
-    $!schema.addtype($u);
-
     push @!lists-to-type, ($<UnionList>.made => $u);
+
+    push @!newtypes, $u;
+    make $u;
 }
 
 method UnionList($/)
@@ -341,8 +344,8 @@ method EnumDefinition($/)
 
     $e.add-comment-description($/);
 
-
-    $!schema.addtype($e);
+    push @!newtypes, $e;
+    make $e;
 }
 
 method EnumValues($/)
@@ -413,7 +416,8 @@ method ScalarDefinition($/)
 
     $o.add-comment-description($/);
 
-    $!schema.addtype($o);
+    push @!newtypes, $o;
+    make $o;
 }
 
 method InputDefinition($/)
@@ -423,7 +427,8 @@ method InputDefinition($/)
 
     $o.add-comment-description($/);
 
-    $!schema.addtype($o);
+    push @!newtypes, $o;
+    make $o;
 }
 
 method InputFieldDefinitionList($/)
@@ -452,6 +457,9 @@ method InputFieldDefinition($/)
 
 method TypeSchema($/)
 {
+    # Add all the newly defined types to the schema
+    $!schema.addtype(|@!newtypes);
+
     #
     # Go through all the saved @fields-to-type and @lists-to-type, look
     # them up in the schema type list, and patch them to the right type
