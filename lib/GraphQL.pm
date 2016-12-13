@@ -379,6 +379,11 @@ class GraphQL::Schema
                                                 :$document);
             }
 
+            when GraphQL::Enum
+            {
+                return $fieldType.valid($result) ?? $result !! Nil;
+            }
+
             default 
             {
                 die "Complete Value Unknown Type";

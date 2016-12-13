@@ -5,7 +5,7 @@ unit module GraphQL::Types;
 class GraphQL::Type
 {
     has Str $.name;
-    has Str $.description is rw;
+    has Str $.description;
 
     method add-comment-description($/)
     {
@@ -214,16 +214,21 @@ class GraphQL::EnumValue is GraphQL::Scalar does Deprecatable
     { self.description-comment ~ "$indent$.name" ~ self.deprecate-str }
 }
 
-class GraphQL::Enum is GraphQL::Scalar
+class GraphQL::Enum is GraphQL::Type
 {
     has Str $.kind = 'ENUM';
-    has GraphQL::EnumValue @.enumValues;
+    has GraphQL::Type @.enumValues;
 
     method enumValues(Bool :$includeDeprecated)
     {
-	@!enumValues.grep: {$includeDeprecated or not .isDeprecated}
+	@!enumValues.grep: { $includeDeprecated or not .isDeprecated }
     }
     
+    method valid($value) returns Bool
+    {
+        so @.enumValues.first({ .name eq $value });
+    }
+
     method Str
     {
         self.description-comment ~
@@ -366,3 +371,12 @@ class GraphQL::Document
     }
 }
 
+class GraphQL::Response
+{
+    has GraphQL::Type $.type;
+    has $.value;
+
+    method to-json returns Str
+    {
+    }
+}
