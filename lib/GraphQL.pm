@@ -17,6 +17,7 @@ class GraphQL::Schema
     has Str $.query is rw = 'Query';
     has Str $.mutation is rw;
     has Str $.subscription is rw;
+    has @errors;
 
     multi method new(:$query, :$mutation, :$subscription, :$resolvers, *@types)
         returns GraphQL::Schema
@@ -185,27 +186,45 @@ class GraphQL::Schema
             unless self.queryType
             and self.queryType.kind ~~ 'OBJECT';
 
-        my $operation = $document.GetOperation($operationName);
+        try
+        {
 
-        my $selectionSet = $operation.selectionset;
+            my $operation = $document.GetOperation($operationName);
 
-        my %coercedVariableValues = CoerceVariableValues(:$operation,
-                                                         :%variables);
+            my $selectionSet = $operation.selectionset;
 
-        my $objectValue = $initialValue // 0;
+            my %coercedVariableValues = CoerceVariableValues(:$operation,
+                                                             :%variables);
 
-        my $objectType = $operation.operation eq 'mutation'
-                         ?? $.mutationType !! $.queryType;
+            my $objectValue = $initialValue // 0;
 
-        my $data = self.ExecuteSelectionSet(:$selectionSet,
-                                            :$objectType,
-                                            :$objectValue,
-                                            :%variables,
-                                            :$document);
+            my $objectType = $operation.operation eq 'mutation'
+                             ?? $.mutationType !! $.queryType;
 
-        return {
-            data => $data
-        };
+            my $ret = 
+            {
+                data => self.ExecuteSelectionSet(:$selectionSet,
+                                                 :$objectType,
+                                                 :$objectValue,
+                                                 :%variables,
+                                                 :$document);
+            };
+
+            $ret<errors> = @errors if @errors;
+
+            return $ret;
+
+            CATCH {
+                default {
+                    say "CAUGHT!";
+                    push @errors, { message => $_.Str };
+                }
+            }
+        }
+
+        say "HERE!";
+
+        return { errors => @errors };
     }
 
     method ExecuteSelectionSet(:@selectionSet,
