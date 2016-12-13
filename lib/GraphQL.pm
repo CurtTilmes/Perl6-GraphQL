@@ -216,13 +216,10 @@ class GraphQL::Schema
 
             CATCH {
                 default {
-                    say "CAUGHT!";
                     push @errors, { message => $_.Str };
                 }
             }
         }
-
-        say "HERE!";
 
         return { errors => @errors };
     }
