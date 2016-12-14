@@ -18,14 +18,20 @@ sub GraphQL-Server($s) is export
     }
 }
 
-sub MAIN(Str $query?, :$port = 3000) is export
+multi sub MAIN(Str:D $query) is export
 {
-    if $query
-    {
-        say to-json $schema.execute($query);
-    }
-    else
-    {
-        baile $port;
-    }
+    say "Running query [$query]";
+    
+    say to-json $schema.execute($query);
+}
+
+multi sub MAIN(Str:D :$filename) is export
+{
+    say "getting query from [$filename]";
+    say to-json $schema.execute($filename.IO.slurp);
+}
+
+multi sub MAIN(Int :$port = 3000) is export
+{
+    baile $port;
 }
