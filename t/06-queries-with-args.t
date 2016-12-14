@@ -190,6 +190,68 @@ my @testcases =
         ]
     }
 },
+
+#----------------------------------------------------------------------
+'@skip directive if false',
+
+'query { user(id: 4) { id, name @skip(if: false)} }',
+
+{},
+
+{
+    data => {
+        user => Hash::Ordered.new(
+            'id', 4,
+            'name', 'Mary Anne'
+        )
+    }
+},
+
+#----------------------------------------------------------------------
+'@skip directive if true',
+
+'query { user(id: 4) { id, name @skip(if: true)} }',
+
+{},
+
+{
+    data => {
+        user => Hash::Ordered.new(
+            'id', 4,
+        )
+    }
+},
+
+#----------------------------------------------------------------------
+'@skip directive if variable false',
+
+'query ($x: Boolean) { user(id: 4) { id, name @skip(if: $x)} }',
+
+{ x => 'false' },
+
+{
+    data => {
+        user => Hash::Ordered.new(
+            'id', 4,
+            'name', 'Mary Anne'
+        )
+    }
+},
+
+#----------------------------------------------------------------------
+'@skip directive if variable true',
+
+'query ($x: Boolean) { user(id: 4) { id, name @skip(if: $x)} }',
+
+{x => 'true'},
+
+{
+    data => {
+        user => Hash::Ordered.new(
+            'id', 4,
+        )
+    }
+},
 ;
 
 for @testcases -> $description, $query, %variables, %expected
