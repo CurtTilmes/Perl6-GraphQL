@@ -7,7 +7,6 @@ use GraphQL::Grammar;
 use GraphQL::Actions;
 use GraphQL::Types;
 
-# A set to easily check for membership later
 my Set $defaultTypes = set $GraphQLInt, $GraphQLFloat, $GraphQLString,
                            $GraphQLBoolean, $GraphQLID;
 
