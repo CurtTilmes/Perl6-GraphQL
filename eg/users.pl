@@ -1,8 +1,7 @@
-use Bailador;
-use GraphQL;
-use GraphQL::GraphiQL;
+#!/usr/bin/env perl6
 
-use JSON::Fast;
+use GraphQL;
+use GraphQL::Server;
 
 class User
 {
@@ -71,10 +70,4 @@ my $resolvers =
 my $schema = GraphQL::Schema.new("users.schema".IO.slurp,
                                  resolvers => $resolvers);
 
-get '/graphql' => sub { $GraphiQL }
-
-post '/graphql' => sub {
-    to-json($schema.execute(from-json(request.body)<query>));
-}
-
-baile;
+GraphQL-Server($schema);

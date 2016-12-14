@@ -216,7 +216,7 @@ class GraphQL::Schema
 
             CATCH {
                 default {
-                    push @errors, { message => $_.Str };
+                    push @errors, { message => .Str };
                 }
             }
         }
