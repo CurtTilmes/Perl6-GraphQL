@@ -239,9 +239,9 @@ my @testcases =
 },
 
 #----------------------------------------------------------------------
-'@skip directive if variable true',
+'@include directive if variable true',
 
-'query ($x: Boolean) { user(id: 4) { id, name @skip(if: $x)} }',
+'query ($x: Boolean) { user(id: 4) { id, name @include(if: $x)} }',
 
 {x => 'true'},
 
@@ -249,6 +249,69 @@ my @testcases =
     data => {
         user => Hash::Ordered.new(
             'id', 4,
+            'name', 'Mary Anne'
+        )
+    }
+},
+
+#----------------------------------------------------------------------
+'@include directive if false',
+
+'query { user(id: 4) { id, name @include(if: false)} }',
+
+{},
+
+{
+    data => {
+        user => Hash::Ordered.new(
+            'id', 4,
+        )
+    }
+},
+
+#----------------------------------------------------------------------
+'@include directive if true',
+
+'query { user(id: 4) { id, name @include(if: true)} }',
+
+{},
+
+{
+    data => {
+        user => Hash::Ordered.new(
+            'id', 4,
+            'name', 'Mary Anne'
+        )
+    }
+},
+
+#----------------------------------------------------------------------
+'@include directive if variable false',
+
+'query ($x: Boolean) { user(id: 4) { id, name @include(if: $x)} }',
+
+{ x => 'false' },
+
+{
+    data => {
+        user => Hash::Ordered.new(
+            'id', 4,
+        )
+    }
+},
+
+#----------------------------------------------------------------------
+'@include directive if variable true',
+
+'query ($x: Boolean) { user(id: 4) { id, name @include(if: $x)} }',
+
+{x => 'true'},
+
+{
+    data => {
+        user => Hash::Ordered.new(
+            'id', 4,
+            'name', 'Mary Anne'
         )
     }
 },
