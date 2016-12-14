@@ -65,7 +65,7 @@ method VariableDefinition($/)
 
     make GraphQL::Variable.new(
         name => $<Variable>.<Name>.made,
-        type => $!schema.type($<Type>.made),
+        type => $<Type>.made,
         defaultValue => $<DefaultValue>.made
     );
 }
@@ -82,8 +82,6 @@ method Selection($/)
 
 method QueryField($/)
 {
-    say $<Directives>.made;
-
     make GraphQL::QueryField.new(
         alias => $<Alias>.made,
         name => $<Name>.made,
@@ -383,10 +381,6 @@ method Directives($/)
 	%directives{$directive<Name>.made} = $directive<Arguments>.made // Nil;
     }
     make %directives;
-}
-
-method Directive($/)
-{
 }
 
 method DefaultValue($/)

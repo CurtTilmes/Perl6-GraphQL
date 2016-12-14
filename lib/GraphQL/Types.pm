@@ -191,7 +191,7 @@ class GraphQL::InputObject is GraphQL::Type
     {
         self.description-comment ~
         "input $.name " ~
-        ~ "\{\n" ~ @!inputFields.map({.Str}).join("\n") ~ "\n}\n"
+        ~ "\{\n" ~ @!inputFields.map({'  ' ~ .Str}).join("\n") ~ "\n}\n"
     }
 }
 
@@ -266,7 +266,7 @@ class GraphQL::Operation
 {
     has Str $.name;
     has Str $.operation = 'query';
-    has @.vars;
+    has GraphQL::Variable @.vars;
     has GraphQL::Directive @.directives;
     has @.selectionset;  # QueryField or Fragment
 
@@ -284,14 +284,14 @@ class GraphQL::QueryField
     has Str $.alias;
     has Str $.name;
     has %.args;
-    has GraphQL::Directive @.directives;
+    has %.directives;
     has @.selectionset;
 
     method responseKey { $!alias // $!name }
 
     method Str(Str $indent = '')
     {
-        $indent ~ ($!alias ~ ':=' if $!alias) ~ $!name
+        $indent ~ ($!alias ~ ': ' if $!alias) ~ $!name
         ~
             ( '(' ~ %!args.keys.map({$_.Str ~ ': ' ~ %!args{$_}.perl})
                                .join(', ') ~ ')' if %!args)
@@ -306,7 +306,7 @@ class GraphQL::Fragment
 {
     has Str $.name;
     has Str $.onType;
-    has GraphQL::Directive @.directives;
+    has %.directives;
     has @.selectionset;
 
     method Str($indent = '')
@@ -320,7 +320,7 @@ class GraphQL::Fragment
 class GraphQL::FragmentSpread
 {
     has Str $.name;
-    has GraphQL::Directive @.directives;
+    has %.directives;
 
     method Str($indent = '')
     {
@@ -331,7 +331,7 @@ class GraphQL::FragmentSpread
 class GraphQL::InlineFragment
 {
     has Str $.onType;
-    has GraphQL::Directive @.directives;
+    has %.directives;
     has @.selectionset;
 
     method Str($indent = '')
