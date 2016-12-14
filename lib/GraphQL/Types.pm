@@ -279,6 +279,15 @@ class GraphQL::Operation
     }
 }
 
+sub directive-str($name, $args)
+{
+    ' @' ~ $name ~ ('('
+                        ~ $args.keys
+                               .map({ "$_: \$" ~ $args{$_}.name})
+                               .join(', ')
+                   ~ ')' if $args)
+}
+
 class GraphQL::QueryField
 {
     has Str $.alias;
@@ -295,6 +304,8 @@ class GraphQL::QueryField
         ~
             ( '(' ~ %!args.keys.map({$_.Str ~ ': ' ~ %!args{$_}.perl})
                                .join(', ') ~ ')' if %!args)
+        ~
+            %!directives.kv.map(&directive-str)
         ~
             ( " \{\n" ~ @!selectionset.map({.Str($indent ~ '  ')}).join('') ~
               $indent ~ '}' if @!selectionset)
