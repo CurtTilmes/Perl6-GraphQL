@@ -267,7 +267,7 @@ class GraphQL::Operation
     has Str $.name;
     has Str $.operation = 'query';
     has @.vars;
-    has %.directives;
+    has GraphQL::Directive @.directives;
     has @.selectionset;  # QueryField or Fragment
 
     method Str
@@ -306,7 +306,7 @@ class GraphQL::Fragment
 {
     has Str $.name;
     has Str $.onType;
-    has @.directives;
+    has GraphQL::Directive @.directives;
     has @.selectionset;
 
     method Str($indent = '')
@@ -320,7 +320,7 @@ class GraphQL::Fragment
 class GraphQL::FragmentSpread
 {
     has Str $.name;
-    has @.directives;
+    has GraphQL::Directive @.directives;
 
     method Str($indent = '')
     {
@@ -331,7 +331,7 @@ class GraphQL::FragmentSpread
 class GraphQL::InlineFragment
 {
     has Str $.onType;
-    has @.directives;
+    has GraphQL::Directive @.directives;
     has @.selectionset;
 
     method Str($indent = '')

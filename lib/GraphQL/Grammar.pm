@@ -88,9 +88,9 @@ rule SelectionSet { '{' <.Comment>* % <.ws>
                         <Selection>+
                         <.Comment>* % <.ws> '}' }
 
-rule Selection { <Field> | <FragmentSpread> | <InlineFragment> }
+rule Selection { <QueryField> | <FragmentSpread> | <InlineFragment> }
 
-rule Field { <Alias>? <Name> <Arguments>? <Directives>? <SelectionSet>? }
+rule QueryField { <Alias>? <Name> <Arguments>? <Directives>? <SelectionSet>? }
 
 rule Alias { <Name> ':' }
 
@@ -154,62 +154,63 @@ rule Directive { '@' <Name> <Arguments>? }
 
 rule TypeSchema { <.ws> <TypeDefinition>+ }
 
-rule TypeDefinition { <InterfaceDefinition>  |
-                      <ScalarDefinition>     |
-                      <ObjectTypeDefinition> |
-                      <UnionDefinition>      |
-                      <EnumDefinition>       |
-                      <InputDefinition>      |
-                      <SchemaDefinition> }
+rule TypeDefinition { <Interface>   |
+                      <Scalar>      |
+                      <ObjectType>  |
+                      <Union>       |
+                      <Enum>        |
+                      <InputObject> |
+                      <Schema> }
 
-rule InterfaceDefinition
-{ <Comment>* % <.ws> 'interface' <Name> <FieldDefinitionList> }
+rule Interface
+{ <Comment>* % <.ws> 'interface' <Name> <FieldList> }
 
-rule FieldDefinitionList { '{' <FieldDefinition>+ '}' }
+rule FieldList { '{' <Field>+ '}' }
 
-rule FieldDefinition
+rule Field
 { <Comment>* % <.ws> <Name> <ArgumentDefinitions>? ':' <Type> <Directives>? }
 
 rule ArgumentDefinitions { '(' <ArgumentDefinition>+ % <.ws> ')' }
 
 rule ArgumentDefinition { <Name> ':' <Type> <DefaultValue>? }
 
-rule ScalarDefinition 
+rule Scalar
 { <Comment>* % <.ws> 'scalar' <Name> }
 
-rule ObjectTypeDefinition
-{ <Comment>* % <.ws> 'type' <Name> <ImplementsDefinition>?
-                            <FieldDefinitionList> }
+rule ObjectType
+{ <Comment>* % <.ws> 'type' <Name> <Implements>?
+                            <FieldList> }
 
-rule ImplementsDefinition { 'implements' <Name>+ % <.ws> }
+rule Implements { 'implements' <Name>+ % <.ws> }
 
-rule UnionDefinition
+rule Union
 { <Comment>* % <.ws> 'union' <Name> '=' <UnionList> }
 
 rule UnionList { <Name>+ % <.UnionSep> }
 
 rule UnionSep { <.ws> '|'  }
 
-rule EnumDefinition
+rule Enum
 { <Comment>* % <.ws> 'enum' <Name> '{' <EnumValues> '}' }
 
 rule EnumValues { <EnumValue>+ }
 
 rule EnumValue { <Comment>* % <.ws> <Name> <Directives>? }
 
-rule InputDefinition
-{ <Comment>* % <.ws> 'input' <Name> <InputFieldDefinitionList> }
+rule InputObject
+{ <Comment>* % <.ws> 'input' <Name> <InputFieldList> }
 
-rule InputFieldDefinitionList { '{' <InputFieldDefinition>+ '}' }
+rule InputFieldList { '{' <InputField>+ '}' }
 
-rule InputFieldDefinition
+rule InputField
 { <Comment>* % <.ws> <Name> ':' <Type> <DefaultValue>? }
 
-rule SchemaDefinition { <Comment>* % <.ws> 
-                        'schema' '{'
-                            <SchemaQuery>?
-                            <SchemaMutation>?
-                        '}' }
+rule Schema { <Comment>* % <.ws> 
+                  'schema' '{'
+                  <SchemaQuery>?
+                  <SchemaMutation>?
+                  <SchemaSubscription>?
+                  '}' }
 
 rule SchemaQuery { 'query' ':' <Name> }
 

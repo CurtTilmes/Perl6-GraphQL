@@ -13,6 +13,7 @@ my Set $defaultTypes = set $GraphQLInt, $GraphQLFloat, $GraphQLString,
 class GraphQL::Schema
 {
     has GraphQL::Type %!types;
+    has GraphQL::Directive @.directives;
     has Str $.query is rw = 'Query';
     has Str $.mutation is rw;
     has Str $.subscription is rw;
@@ -96,8 +97,7 @@ class GraphQL::Schema
         ));
     }
 
-    method types { %!types.values.grep: {.name !~~ /^__/
-                                         and not $_ ∈ $defaultTypes} }
+    method types { %!types.values.grep }
 
     method addtype(*@newtypes)
     {
@@ -366,6 +366,13 @@ class GraphQL::Schema
     method ResolveAbstractType(:$fieldType, :$results)
     {
         die "ResolveAbstractType";
+    }
+
+    method maketype(Str $rule, Str $desc) returns GraphQL::Type
+    {
+        my $actions = GraphQL::Actions.new(:schema(self));
+
+        GraphQL::Grammar.parse($desc, :$rule, :$actions).made;
     }
 }
 

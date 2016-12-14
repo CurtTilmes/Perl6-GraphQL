@@ -77,11 +77,13 @@ method SelectionSet($/)
 
 method Selection($/)
 {
-    make $<Field>.made // $<FragmentSpread>.made // $<InlineFragment>.made;
+    make $<QueryField>.made // $<FragmentSpread>.made // $<InlineFragment>.made;
 }
 
-method Field($/)
+method QueryField($/)
 {
+    say $<Directives>.made;
+
     make GraphQL::QueryField.new(
         alias => $<Alias>.made,
         name => $<Name>.made,
@@ -111,7 +113,7 @@ method FragmentSpread($/)
 {
     make GraphQL::FragmentSpread.new(
         name => $<FragmentName>.made,
-        directives => $<Directives>.made
+        directives => $<Directives>.made // ()
     );
 }
 
@@ -119,7 +121,7 @@ method InlineFragment($/)
 {
     make GraphQL::InlineFragment.new(
         onType => $<TypeCondition>.made,
-        directives => $<Directives>.made,
+        directives => $<Directives>.made // (),
         selectionset => $<SelectionSet>.made
     );
 }
@@ -129,7 +131,7 @@ method FragmentDefinition($/)
     $!q.fragments{$<FragmentName>.made} = GraphQL::Fragment.new(
         name         => $<FragmentName>.made,
         onType       => $<TypeCondition>.made.name,
-        directives   => $<Directives>.made,
+        directives   => $<Directives>.made // (),
         selectionset => $<SelectionSet>.made
     );
 }
@@ -244,10 +246,10 @@ method NonNullType($/)
     }
 }
 
-method InterfaceDefinition($/)
+method Interface($/)
 {
     my $i = GraphQL::Interface.new(name => $<Name>.made,
-                         fields => $<FieldDefinitionList>.made);
+                         fields => $<FieldList>.made);
 
     $i.add-comment-description($/);
 
@@ -255,9 +257,9 @@ method InterfaceDefinition($/)
     make $i;
 }
 
-method FieldDefinitionList($/)
+method FieldList($/)
 {
-    make $<FieldDefinition>».made;
+    make $<Field>».made;
 }
 
 method Comment($/)
@@ -265,7 +267,7 @@ method Comment($/)
     make $/.Str.subst(/^\#\s?/, '');
 }
 
-method FieldDefinition($/)
+method Field($/)
 {
     my $f = GraphQL::Field.new(
 	name => $<Name>.made,
@@ -298,29 +300,29 @@ method FieldDefinition($/)
     make $f;
 }
 
-method ObjectTypeDefinition($/)
+method ObjectType($/)
 {
     my $o = GraphQL::Object.new(name => $<Name>.made,
-                                fields => $<FieldDefinitionList>.made);
+                                fields => $<FieldList>.made);
 
     $o.add-comment-description($/);
 
-    if $<ImplementsDefinition>.made
+    if $<Implements>.made
     {
         push @!lists-to-type, 
-             ($<ImplementsDefinition>.made => $o);
+             ($<Implements>.made => $o);
     }
 
     push @!newtypes, $o;
     make $o;
 }
 
-method ImplementsDefinition($/)
+method Implements($/)
 {
     make $<Name>».made;
 }
 
-method UnionDefinition($/)
+method Union($/)
 {
     my $u = GraphQL::Union.new(name => $<Name>.made);
 
@@ -337,7 +339,7 @@ method UnionList($/)
     make $<Name>».made; 
 }
 
-method EnumDefinition($/)
+method Enum($/)
 {
     my $e = GraphQL::Enum.new(name => $<Name>.made,
                               enumValues => $<EnumValues>.made);
@@ -383,6 +385,10 @@ method Directives($/)
     make %directives;
 }
 
+method Directive($/)
+{
+}
+
 method DefaultValue($/)
 {
     make $<Value>.made;
@@ -410,7 +416,7 @@ method ArgumentDefinitions($/)
     make $<ArgumentDefinition>».made;
 }
 
-method ScalarDefinition($/)
+method Scalar($/)
 {
     my $o = GraphQL::Scalar.new(name => $<Name>.made);
 
@@ -420,10 +426,10 @@ method ScalarDefinition($/)
     make $o;
 }
 
-method InputDefinition($/)
+method InputObject($/)
 {
     my $o = GraphQL::InputObject.new(name => $<Name>.made,
-        inputFields => $<InputFieldDefinitionList>.made);
+        inputFields => $<InputFieldList>.made);
 
     $o.add-comment-description($/);
 
@@ -431,12 +437,12 @@ method InputDefinition($/)
     make $o;
 }
 
-method InputFieldDefinitionList($/)
+method InputFieldList($/)
 {
-    make $<InputFieldDefinition>».made;
+    make $<InputField>».made;
 }
 
-method InputFieldDefinition($/)
+method InputField($/)
 {
     my $f = GraphQL::InputValue.new(name => $<Name>.made,
                                     defaultValue => $<DefaultValue>.made);
@@ -512,7 +518,7 @@ method TypeSchema($/)
     make $!schema;
 }
 
-method SchemaDefinition($/)
+method Schema($/)
 {
     $!schema.query = $<SchemaQuery>.made;
     $!schema.mutation = $<SchemaMutation>.made;
