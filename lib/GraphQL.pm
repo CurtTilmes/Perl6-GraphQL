@@ -451,7 +451,35 @@ sub CollectFields(GraphQL::Object :$objectType,
 
     for @selectionSet -> $selection
     {
-#        ... if $selection.directives;
+        if $selection.directives<skip>
+        {
+            given $selection.directives<skip><if>
+            {
+                when Bool
+                {
+                    next if $_;
+                }
+                when GraphQL::Variable and $_.type ~~ GraphQL::Boolean
+                {
+                    next if %variables{$_.name} eq 'true';
+                }
+            }
+        }
+
+        if $selection.directives<include>
+        {
+            given $selection.directives<include><if>
+            {
+                when Bool
+                {
+                    next unless $_;
+                }
+                when GraphQL::Variable and $_.type ~~ GraphQL::Boolean
+                {
+                    next unless %variables{$_.name} eq 'true';
+                }
+            }
+        }
 
         given $selection
         {
