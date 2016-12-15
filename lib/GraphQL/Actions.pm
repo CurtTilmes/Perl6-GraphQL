@@ -225,7 +225,7 @@ method Value:sym<BooleanValue>($/)
 
 method Value:sym<NullValue>($/)
 {
-    make 'null'
+    make Nil
 }
 
 method ObjectValue($/)
