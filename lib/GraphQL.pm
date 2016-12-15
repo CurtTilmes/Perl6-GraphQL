@@ -1,5 +1,3 @@
-use Hash::Ordered;
-
 unit module GraphQL;
 
 use GraphQL::Introspection;
@@ -232,15 +230,17 @@ class GraphQL::Schema
                                :%variables,
                                GraphQL::Document :$document)
     {
-        my $groupedFieldSet = CollectFields(:$objectType,
+        my @groupedFieldSet = CollectFields(:$objectType,
                                             :@selectionSet,
                                             :%variables,
                                             :$document);
-
         my @results;
 
-        for $groupedFieldSet.kv -> $responseKey, @fields
+        for @groupedFieldSet -> $p
         {
+            my $responseKey = $p.key;
+            my @fields = |$p.value;
+
             my $fieldName = @fields[0].name;
 
             my $responseValue;
@@ -459,7 +459,8 @@ sub CollectFields(GraphQL::Object :$objectType,
                   :$visitedFragments is copy = ∅,
                   GraphQL::Document :$document)
 {
-    my $groupedFields = Hash::Ordered.new;
+    my %groupedFields;
+    my @responsekeys;
 
     for @selectionSet -> $selection
     {
@@ -497,10 +498,13 @@ sub CollectFields(GraphQL::Object :$objectType,
         {
             when GraphQL::QueryField
             {
-                $groupedFields{$selection.responseKey} = []
-                    unless $groupedFields{$selection.responseKey}:exists;
+                unless %groupedFields{$selection.responseKey}:exists
+                {
+                    %groupedFields{$selection.responseKey} = [];
+                    push @responsekeys, $selection.responseKey;
+                }
 
-                push $groupedFields{$selection.responseKey}, $selection;
+                push %groupedFields{$selection.responseKey}, $selection;
             }
 
             when GraphQL::FragmentSpread
@@ -519,18 +523,24 @@ sub CollectFields(GraphQL::Object :$objectType,
 
                 my @fragmentSelectionSet = $fragment.selectionset;
 
-                my $fragmentGroupedFieldSet = CollectFields(
+                my @fragmentGroupedFieldSet = CollectFields(
                     :$objectType,
                     :selectionSet(@fragmentSelectionSet),
                     :%variables,
                     :$visitedFragments,
                     :$document);
 
-                for $fragmentGroupedFieldSet.kv -> $responseKey, @fragmentGroup
+                for @fragmentGroupedFieldSet -> $p
                 {
-                    $groupedFields{$responseKey} = []
-                        unless $groupedFields{$responseKey}:exists;
-                    push $groupedFields{$responseKey}, |@fragmentGroup;
+                    my $responseKey = $p.key;
+                    my @fragmentGroup = |$p.value;
+
+                    unless %groupedFields{$responseKey}:exists
+                    {
+                        %groupedFields{$responseKey} = [];
+                        push @responsekeys, $responseKey;
+                    }
+                    push %groupedFields{$responseKey}, |@fragmentGroup;
                 }
             }
 
@@ -543,25 +553,31 @@ sub CollectFields(GraphQL::Object :$objectType,
 
                 my @fragmentSelectionSet = $selection.selectionset;
 
-                my $fragmentGroupedFieldSet = CollectFields(
+                my @fragmentGroupedFieldSet = CollectFields(
                     :$objectType,
                     :selectionSet(@fragmentSelectionSet),
                     :%variables,
                     :$visitedFragments,
                     :$document);
                 
-                for $fragmentGroupedFieldSet.kv -> $responseKey, @fragmentGroup
+                for @fragmentGroupedFieldSet -> $p
                 {
-                    $groupedFields{$responseKey} = []
-                        unless $groupedFields{$responseKey}:exists;
+                    my $responseKey = $p.key;
+                    my @fragmentGroup = |$p.value;
 
-                    push $groupedFields{$responseKey}, |@fragmentGroup;
+                    unless %groupedFields{$responseKey}:exists
+                    {
+                        %groupedFields{$responseKey} = [];
+                        push @responsekeys, $responseKey;
+                    }
+
+                    push %groupedFields{$responseKey}, |@fragmentGroup;
                 }
             }
         }
     }
 
-    return $groupedFields;
+    return @responsekeys.map( { $_ => %groupedFields{$_} } );
 }
 
 sub call-with-right-args(Sub $sub, *%allargs)
