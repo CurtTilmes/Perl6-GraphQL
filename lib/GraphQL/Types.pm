@@ -1,5 +1,3 @@
-use Hash::Ordered;
-
 unit module GraphQL::Types;
 
 class GraphQL::Type

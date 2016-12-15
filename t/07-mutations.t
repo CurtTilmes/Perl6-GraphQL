@@ -2,8 +2,6 @@ use v6;
 
 use lib 'lib';
 use GraphQL;
-use Hash::Ordered;
-use JSON::Fast;
 
 use Test;
 
