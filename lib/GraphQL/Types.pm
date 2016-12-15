@@ -236,9 +236,15 @@ class GraphQL::Object is GraphQL::Type does HasFields
 
     method to-json($name, $value, $indent)
     {
-        $indent ~ (qq<"$name": > if $name) ~ "\{\n" ~
-            $value.map({ .to-json($indent ~ '  ') }).join(",\n") ~
-        qq<\n$indent}>
+        $indent ~ (qq<"$name": > if $name) ~
+
+        ($value
+
+        ?? "\{\n" ~
+                $value.map({ .to-json($indent ~ '  ') }).join(",\n") ~
+            qq<\n$indent}>
+
+        !! 'null')
     }
 }
 

@@ -14,21 +14,18 @@ sub GraphQL-Server($s) is export
     get '/graphql' => sub { $GraphiQL }
     
     post '/graphql' => sub {
-        to-json($schema.execute(from-json(request.body)<query>));
+        $schema.execute(from-json(request.body)<query>).to-json
     }
 }
 
 multi sub MAIN(Str:D $query) is export
 {
-    say "Running query [$query]";
-    
-    say to-json $schema.execute($query);
+    say $schema.execute($query).to-json;
 }
 
 multi sub MAIN(Str:D :$filename) is export
 {
-    say "getting query from [$filename]";
-    say to-json $schema.execute($filename.IO.slurp);
+    say $schema.execute($filename.IO.slurp).to-json;
 }
 
 multi sub MAIN(Int :$port = 3000) is export
