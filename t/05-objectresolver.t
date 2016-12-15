@@ -55,15 +55,15 @@ query {
 
 ok my $ret = $schema.execute(:$document), 'Execute query';
 
-is-deeply $ret, 
-{
-    data => Hash::Ordered.new(
-        'name', 'Fred',
-        'id', 7,
-        'birthday', 'Friday',
-        'status', True,
-        'someextra', 'an extra field'
-    )
-}, 'Compare results';
+is $ret.to-json, 
+Q<<{
+  "data": {
+    "name": null,
+    "id": null,
+    "birthday": null,
+    "status": "false",
+    "someextra": "an extra field"
+  }
+}>>, 'Compare results';
 
 done-testing;

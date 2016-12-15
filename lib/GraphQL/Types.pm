@@ -92,12 +92,7 @@ class GraphQL::Boolean is GraphQL::Scalar
         qq<$indent"$name": "{$value ?? 'true' !! 'false'}">
     }
 
-    method coerce($value)
-    {
-        return True if $value eq 'true';
-        return False if $value eq 'false';
-        die "Bad Boolean Value $value";
-    }
+    method coerce($value) { $value }
 }
 
 class GraphQL::ID is GraphQL::Scalar
@@ -292,7 +287,7 @@ class GraphQL::EnumValue is GraphQL::Scalar does Deprecatable
     { self.description-comment ~ "$indent$.name" ~ self.deprecate-str }
 }
 
-class GraphQL::Enum is GraphQL::Type
+class GraphQL::Enum is GraphQL::Scalar
 {
     has Str $.kind = 'ENUM';
     has GraphQL::Type @.enumValues;

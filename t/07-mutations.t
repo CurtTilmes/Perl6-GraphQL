@@ -46,23 +46,23 @@ class User
 }
 
 my @users =
-    User.new(id => 0,
+    User.new(id => "0",
              name => 'Gilligan',
              birthday => 'Friday',
              status => True),
-    User.new(id => 1,
+    User.new(id => "1",
              name => 'Skipper',
              birthday => 'Monday',
              status => False),
-    User.new(id => 2,
+    User.new(id => "2",
              name => 'Professor',
              birthday => 'Tuesday',
              status => True),
-    User.new(id => 3,
+    User.new(id => "3",
              name => 'Ginger',
              birthday => 'Wednesday',
              status => True),
-    User.new(id => 4,
+    User.new(id => "4",
              name => 'Mary Anne',
              birthday => 'Thursday',
              status => True);
@@ -86,7 +86,7 @@ $schema.resolvers(
     {
         adduser => sub (:%newuser)
         {
-            push @users, User.new(id => @users.elems, |%newuser);
+            push @users, User.new(id => @users.elems.Str, |%newuser);
             return @users.elems - 1;
         },
         updateuser => sub (Int :$id, :%userinput)
@@ -108,14 +108,14 @@ my @testcases =
 
 {},
 
-{
-    data => {
-        user => Hash::Ordered.new(
-            'id', 3,
-            'name', 'Ginger'
-        )
+Q<<{
+  "data": {
+    "user": {
+      "id": "3",
+      "name": "Ginger"
     }
-},
+  }
+}>>,
 
 #----------------------------------------------------------------------
 'Update user 3',
@@ -124,14 +124,14 @@ my @testcases =
 
 {},
 
-{
-    data => {
-        updateuser => Hash::Ordered.new(
-            'id', 3,
-            'name', 'Fred'
-        )
+Q<<{
+  "data": {
+    "updateuser": {
+      "id": "3",
+      "name": "Fred"
     }
-},
+  }
+}>>,
 
 #----------------------------------------------------------------------
 'Get changed user 3',
@@ -140,14 +140,14 @@ my @testcases =
 
 {},
 
-{
-    data => {
-        user => Hash::Ordered.new(
-            'id', 3,
-            'name', 'Fred'
-        )
+Q<<{
+  "data": {
+    "user": {
+      "id": "3",
+      "name": "Fred"
     }
-},
+  }
+}>>,
 
 #----------------------------------------------------------------------
 'Update user 3, change multiple fields',
@@ -159,16 +159,16 @@ my @testcases =
 
 {},
 
-{
-    data => {
-        updateuser => Hash::Ordered.new(
-            'id', 3,
-            'birthday', 'Saturday',
-            'status', False,
-            'name', 'Fred'
-        )
+Q<<{
+  "data": {
+    "updateuser": {
+      "id": "3",
+      "birthday": "Saturday",
+      "status": "false",
+      "name": "Fred"
     }
-},
+  }
+}>>,
 
 #----------------------------------------------------------------------
 'Change user 2 with variable for userinput',
@@ -185,16 +185,16 @@ my @testcases =
     }
 },
 
-{
-    data => {
-        updateuser => Hash::Ordered.new(
-            'id', 2,
-            'birthday', 'Sunday',
-            'status', True,
-            'name', 'John'
-        )
+Q<<{
+  "data": {
+    "updateuser": {
+      "id": "2",
+      "birthday": "Sunday",
+      "status": "true",
+      "name": "John"
     }
-},
+  }
+}>>,
 
 #----------------------------------------------------------------------
 'Insert a new user',
@@ -211,11 +211,11 @@ my @testcases =
     }
 },
 
-{
-    data => {
-        adduser => 5
-    }
-},
+Q<<{
+  "data": {
+    "adduser": "5"
+  }
+}>>,
 
 #----------------------------------------------------------------------
 'Check to see if new user present',
@@ -224,20 +224,20 @@ my @testcases =
 
 {},
 
-{
-    data => {
-        user => Hash::Ordered.new(
-            'id', 5,
-            'birthday', 'Tuesday',
-            'status', False,
-            'name', 'Thurston'
-        )
+Q<<{
+  "data": {
+    "user": {
+      "id": "5",
+      "birthday": "Tuesday",
+      "status": "true",
+      "name": "Thurston"
     }
-},
+  }
+}>>,
 
 ;
 
-for @testcases -> $description, $query, %variables, %expected
+for @testcases -> $description, $query, %variables, $expected
 {
     ok my $document = $schema.document($query),
     "parse $description";
@@ -245,9 +245,7 @@ for @testcases -> $description, $query, %variables, %expected
     ok my $ret = $schema.execute(:$document, :%variables),
     "execute $description";
 
-#   is-deeply $ret, %expected;
-
-    is to-json($ret), to-json(%expected), "compare $description";
+    is $ret.to-json, $expected, "compare $description";
 }
 
 done-testing;

@@ -210,9 +210,11 @@ class GraphQL::Schema
 #            $ret<errors> = @errors if @errors;
 
             return GraphQL::Response.new(
-                name => 'data',
                 type => GraphQL::Object,
-                value => $ret);
+                value => GraphQL::Response.new(
+                    name => 'data',
+                    type => GraphQL::Object,
+                    value => $ret));
 
 #            CATCH {
 #                default {

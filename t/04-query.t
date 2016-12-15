@@ -34,13 +34,13 @@ Q<<
     name
 }
 >>, 
-{
-    data => {
-        name => 'Fred'
-    }
-},
+Q<<{
+  "data": {
+    "name": "Fred"
+  }
+}>>,
 #----------------------------------------------------------------------
-'More fields, yes order matters',
+'More fields',
 Q<<
 {
     name
@@ -48,13 +48,13 @@ Q<<
     birthday
 }
 >>, 
-{
-    data => Hash::Ordered.new(
-        'name', 'Fred',
-        'id', 7,
-        'birthday', 'Friday'
-    )
-},
+Q<<{
+  "data": {
+    "name": "Fred",
+    "id": "7",
+    "birthday": "Friday"
+  }
+}>>,
 #----------------------------------------------------------------------
 'Try some aliases',
 Q<<
@@ -65,14 +65,14 @@ Q<<
     orcallme: name
 }
 >>, 
-{
-    data => Hash::Ordered.new(
-        'callme', 'Fred',
-        'id', 7,
-        'mybday', 'Friday',
-        'orcallme', 'Fred'
-    )
-},
+Q<<{
+  "data": {
+    "callme": "Fred",
+    "id": "7",
+    "mybday": "Friday",
+    "orcallme": "Fred"
+  }
+}>>,
 #----------------------------------------------------------------------
 'Fragment',
 Q<<
@@ -88,15 +88,15 @@ fragment morestuff on User {
     mybday: birthday
 }
 >>, 
-{
-    data => Hash::Ordered.new(
-        'name', 'Fred',
-        'id', 7,
-        'callme', 'Fred',
-        'mybday', 'Friday',
-        'birthday', 'Friday'
-    )
-},
+Q<<{
+  "data": {
+    "name": "Fred",
+    "id": "7",
+    "callme": "Fred",
+    "mybday": "Friday",
+    "birthday": "Friday"
+  }
+}>>,
 #----------------------------------------------------------------------
 'inline Fragment',
 Q<<
@@ -111,15 +111,15 @@ query foo {
     birthday
 }
 >>, 
-{
-    data => Hash::Ordered.new(
-        'name', 'Fred',
-        'id', 7,
-        'callme', 'Fred',
-        'mybday', 'Friday',
-        'birthday', 'Friday'
-    )
-},
+Q<<{
+  "data": {
+    "name": "Fred",
+    "id": "7",
+    "callme": "Fred",
+    "mybday": "Friday",
+    "birthday": "Friday"
+  }
+}>>,
 #----------------------------------------------------------------------
 'Introspection __type',
 Q<<
@@ -131,15 +131,15 @@ Q<<
     }
 }
 >>,
-{
-    data => {
-        __type => Hash::Ordered.new(
-            'name', 'User',
-            'kind', 'OBJECT',
-            'description', Nil
-            )
+Q<<{
+  "data": {
+    "__type": {
+      "name": "User",
+      "kind": "OBJECT",
+      "description": null
     }
-},
+  }
+}>>,
 #----------------------------------------------------------------------
 'Introspection __type(Int)',
 Q<<
@@ -151,15 +151,15 @@ Q<<
     }
 }
 >>,
-{
-    data => {
-        __type => Hash::Ordered.new(
-            'name', 'Int',
-            'kind', 'SCALAR',
-            'description', Nil
-        )
+Q<<{
+  "data": {
+    "__type": {
+      "name": "Int",
+      "kind": "SCALAR",
+      "description": null
     }
-},
+  }
+}>>,
 #----------------------------------------------------------------------
 'Introspection __type(String)',
 Q<<
@@ -171,15 +171,15 @@ Q<<
     }
 }
 >>,
-{
-    data => {
-        __type => Hash::Ordered.new(
-            'name', 'String',
-            'kind', 'SCALAR',
-            'description', Nil
-        )
+Q<<{
+  "data": {
+    "__type": {
+      "name": "String",
+      "kind": "SCALAR",
+      "description": null
     }
-},
+  }
+}>>,
 #----------------------------------------------------------------------
 'Introspection __type(Boolean)',
 Q<<
@@ -191,15 +191,15 @@ Q<<
     }
 }
 >>,
-{
-    data => {
-        __type => Hash::Ordered.new(
-            'name', 'Boolean',
-            'kind', 'SCALAR',
-            'description', Nil
-        )
+Q<<{
+  "data": {
+    "__type": {
+      "name": "Boolean",
+      "kind": "SCALAR",
+      "description": null
     }
-},
+  }
+}>>,
 #----------------------------------------------------------------------
 'Introspection __type(Float)',
 Q<<
@@ -211,21 +211,21 @@ Q<<
     }
 }
 >>,
-{
-    data => {
-        __type => Hash::Ordered.new(
-            'name', 'Float',
-            'kind', 'SCALAR',
-            'description', Nil
-        )
+Q<<{
+  "data": {
+    "__type": {
+      "name": "Float",
+      "kind": "SCALAR",
+      "description": null
     }
-},
+  }
+}>>,
+
 ;
 
 for @testcases -> $description, $query, $expected
 {
-    is to-json($schema.execute($query)),
-       to-json($expected), $description;
+    is $schema.execute($query).to-json, $expected, $description;
 }
 
 done-testing;

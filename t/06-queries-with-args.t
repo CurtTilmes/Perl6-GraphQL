@@ -79,14 +79,14 @@ my @testcases =
 
 {},
 
-{
-    data => {
-        user => Hash::Ordered.new(
-            'id', 3,
-            'name', 'Ginger'
-        )
+Q<<{
+  "data": {
+    "user": {
+      "id": "3",
+      "name": "Ginger"
     }
-},
+  }
+}>>,
 
 #----------------------------------------------------------------------
 'Query for first user in allusers',
@@ -95,16 +95,16 @@ my @testcases =
 
 {},
 
-{
-    data => {
-        allusers => [
-            Hash::Ordered.new(
-                'id', 0,
-                'name', 'Gilligan'
-            )
-        ]
-    }
-},
+Q<<{
+  "data": {
+    "allusers": [
+      {
+        "id": null,
+        "name": "Gilligan"
+      }
+    ]
+  }
+}>>,
 
 #----------------------------------------------------------------------
 'Query for 2 users starting with user 3',
@@ -113,20 +113,20 @@ my @testcases =
 
 {},
 
-{
-    data => {
-        allusers => [
-            Hash::Ordered.new(
-                'name', 'Ginger',
-                'status', True
-            ),
-            Hash::Ordered.new(
-                'name', 'Mary Anne',
-                'status', True
-            )
-        ]
-    }
-},
+Q<<{
+  "data": {
+    "allusers": [
+      {
+        "name": "Ginger",
+        "status": "true"
+      },
+      {
+        "name": "Mary Anne",
+        "status": "true"
+      }
+    ]
+  }
+}>>,
 
 #----------------------------------------------------------------------
 'Query for single user with variable',
@@ -135,14 +135,14 @@ my @testcases =
 
 { x => 3 },
 
-{
-    data => {
-        user => Hash::Ordered.new(
-            'id', 3,
-            'name', 'Ginger'
-        )
+Q<<{
+  "data": {
+    "user": {
+      "id": "3",
+      "name": "Ginger"
     }
-},
+  }
+}>>,
 
 #----------------------------------------------------------------------
 'Query for another user with variable',
@@ -151,14 +151,14 @@ my @testcases =
 
 { x => 4 },
 
-{
-    data => {
-        user => Hash::Ordered.new(
-            'id', 4,
-            'name', 'Mary Anne'
-        )
+Q<<{
+  "data": {
+    "user": {
+      "id": "4",
+      "name": "Mary Anne"
     }
-},
+  }
+}>>,
 
 #----------------------------------------------------------------------
 'Query for multiple users with multiple variables',
@@ -168,28 +168,28 @@ my @testcases =
 
 { start => 1, count => 4 },
 
-{
-    data => {
-        allusers => [
-            Hash::Ordered.new(
-                'name', 'Skipper',
-                'status', False
-            ),
-            Hash::Ordered.new(
-                'name', 'Professor',
-                'status', True
-            ),
-            Hash::Ordered.new(
-                'name', 'Ginger',
-                'status', True
-            ),
-            Hash::Ordered.new(
-                'name', 'Mary Anne',
-                'status', True
-            )
-        ]
-    }
-},
+Q<<{
+  "data": {
+    "allusers": [
+      {
+        "name": "Skipper",
+        "status": "false"
+      },
+      {
+        "name": "Professor",
+        "status": "true"
+      },
+      {
+        "name": "Ginger",
+        "status": "true"
+      },
+      {
+        "name": "Mary Anne",
+        "status": "true"
+      }
+    ]
+  }
+}>>,
 
 #----------------------------------------------------------------------
 '@skip directive if false',
@@ -198,14 +198,14 @@ my @testcases =
 
 {},
 
-{
-    data => {
-        user => Hash::Ordered.new(
-            'id', 4,
-            'name', 'Mary Anne'
-        )
+Q<<{
+  "data": {
+    "user": {
+      "id": "4",
+      "name": "Mary Anne"
     }
-},
+  }
+}>>,
 
 #----------------------------------------------------------------------
 '@skip directive if true',
@@ -214,13 +214,13 @@ my @testcases =
 
 {},
 
-{
-    data => {
-        user => Hash::Ordered.new(
-            'id', 4,
-        )
+Q<<{
+  "data": {
+    "user": {
+      "id": "4"
     }
-},
+  }
+}>>,
 
 #----------------------------------------------------------------------
 '@skip directive if variable false',
@@ -229,14 +229,14 @@ my @testcases =
 
 { x => 'false' },
 
-{
-    data => {
-        user => Hash::Ordered.new(
-            'id', 4,
-            'name', 'Mary Anne'
-        )
+Q<<{
+  "data": {
+    "user": {
+      "id": "4",
+      "name": "Mary Anne"
     }
-},
+  }
+}>>,
 
 #----------------------------------------------------------------------
 '@include directive if variable true',
@@ -245,14 +245,14 @@ my @testcases =
 
 {x => 'true'},
 
-{
-    data => {
-        user => Hash::Ordered.new(
-            'id', 4,
-            'name', 'Mary Anne'
-        )
+Q<<{
+  "data": {
+    "user": {
+      "id": "4",
+      "name": "Mary Anne"
     }
-},
+  }
+}>>,
 
 #----------------------------------------------------------------------
 '@include directive if false',
@@ -261,13 +261,13 @@ my @testcases =
 
 {},
 
-{
-    data => {
-        user => Hash::Ordered.new(
-            'id', 4,
-        )
+Q<<{
+  "data": {
+    "user": {
+      "id": "4"
     }
-},
+  }
+}>>,
 
 #----------------------------------------------------------------------
 '@include directive if true',
@@ -276,14 +276,14 @@ my @testcases =
 
 {},
 
-{
-    data => {
-        user => Hash::Ordered.new(
-            'id', 4,
-            'name', 'Mary Anne'
-        )
+Q<<{
+  "data": {
+    "user": {
+      "id": "4",
+      "name": "Mary Anne"
     }
-},
+  }
+}>>,
 
 #----------------------------------------------------------------------
 '@include directive if variable false',
@@ -292,13 +292,13 @@ my @testcases =
 
 { x => 'false' },
 
-{
-    data => {
-        user => Hash::Ordered.new(
-            'id', 4,
-        )
+Q<<{
+  "data": {
+    "user": {
+      "id": "4"
     }
-},
+  }
+}>>,
 
 #----------------------------------------------------------------------
 '@include directive if variable true',
@@ -307,27 +307,24 @@ my @testcases =
 
 {x => 'true'},
 
-{
-    data => {
-        user => Hash::Ordered.new(
-            'id', 4,
-            'name', 'Mary Anne'
-        )
+Q<<{
+  "data": {
+    "user": {
+      "id": "4",
+      "name": "Mary Anne"
     }
-},
+  }
+}>>,
 ;
 
-for @testcases -> $description, $query, %variables, %expected
+for @testcases -> $description, $query, %variables, $expected
 {
     ok my $document = $schema.document($query), "parse $description";
 
     ok my $ret = $schema.execute(:$document, :%variables),
     "execute $description";
 
-#   is-deeply $ret, %expected;
-
-    is to-json($ret), to-json(%expected),
-    "compare $description";
+    is $ret.to-json, $expected, "compare $description";
 }
 
 done-testing;
