@@ -1,4 +1,5 @@
 unit module GraphQL::Types;
+use Text::Wrap;
 
 class GraphQL::Type
 {
@@ -8,13 +9,15 @@ class GraphQL::Type
     method add-comment-description($/)
     {
         return unless $<Comment>;
-        $!description = $<Comment>».made.join("\n");
+        $!description = $<Comment>».made.join(' ');
     }
 
     method description-comment(Str $indent = '')
     {
-        $.description.split(/\n/).map({ "$indent# $_\n" }).join('')
-         if $.description
+        return unless $!description;
+
+        wrap-text($!description, :width(75 - $indent.chars),
+                  :prefix("$indent# "));
     }
 
     method Str { $!name }
