@@ -30,6 +30,17 @@ has GraphQL::Document $!q = GraphQL::Document.new;
 has $.schema;
 has GraphQL::Type @!newtypes;
 
+my %ESCAPE = (
+    '"'  => '"',
+    '\\' => '\\',
+    '/'  => '/',
+    'b'  => "\b",
+    'f'  => "\f",
+    'n'  => "\n",
+    'r'  => "\r",
+    't'  => "\t"
+);
+
 method Document($/)
 {
     if $!q.operations{''} and $!q.operations.elems() != 1
@@ -171,7 +182,35 @@ method Value:sym<IntValue>($/)
 
 method StringValue($/)
 {
-    make $<InsideString>.Str;
+    make $<str>».made.join;
+}
+
+method str($/)
+{
+    make ~$/;
+}
+
+# copied string escape from JSON::Tiny
+
+my %h = '\\' => "\\",
+        '/'  => "/",
+        'b'  => "\b",
+        'n'  => "\n",
+        't'  => "\t",
+        'f'  => "\f",
+        'r'  => "\r",
+        '"'  => "\"";
+
+method str_escape($/)
+{
+    if $<utf16_codepoint>
+    {
+        make utf16.new( $<utf16_codepoint>.map({:16(~$_)}) ).decode();
+    }
+    else
+    {
+        make %h{~$/};
+    }
 }
 
 method Value:sym<StringValue>($/)

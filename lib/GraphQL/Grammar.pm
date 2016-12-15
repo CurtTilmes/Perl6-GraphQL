@@ -52,20 +52,15 @@ token ExponentIndicator { [ 'e' | 'E' ] }
 
 token Sign { [ '+' | '-' ] }
 
-token StringValue { '"' <InsideString> '"' }
+# copied string stuff from JSON::Tiny
 
-token InsideString { <.StringCharacter>* }
+token StringValue { '"' ~ '"' [ <str> | \\ <str=.str_escape> ]* }
 
-token StringCharacter
-{
-   <[\x[0009]\x[000A]\x[000D]\x[0020]..\x[FFFF]]-[\"\\\r\n]> | 
-   '\u' <EscapedUnicode> | 
-   \\ <EscapedCharacter>
-}
+token str { <-["\\\t\r\n]>+ }
 
-token EscapedUnicode { <[0..9A..Fa..f]> ** 4 }
+token str_escape { <["\\/bfnrt]> | 'u' <utf16_codepoint>+ % '\u' }
 
-token EscapedCharacter { <[\"\\/bfnrt]> }
+token utf16_codepoint { <.xdigit>**4 }
 
 # Query Document
 
