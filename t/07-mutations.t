@@ -207,7 +207,7 @@ my @testcases =
     newuser => {
         name => 'Thurston',
         birthday => 'Tuesday',
-        status => False
+        status => 'false'
     }
 },
 

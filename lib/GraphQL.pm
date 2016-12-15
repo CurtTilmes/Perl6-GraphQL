@@ -6,6 +6,7 @@ use GraphQL::Introspection;
 use GraphQL::Grammar;
 use GraphQL::Actions;
 use GraphQL::Types;
+use GraphQL::Response;
 
 my Set $defaultTypes = set $GraphQLInt, $GraphQLFloat, $GraphQLString,
                            $GraphQLBoolean, $GraphQLID;
@@ -97,7 +98,7 @@ class GraphQL::Schema
         ));
     }
 
-    method types { %!types.values.grep }
+    method types { %!types.values }
 
     method addtype(*@newtypes)
     {
@@ -185,8 +186,8 @@ class GraphQL::Schema
             unless self.queryType
             and self.queryType.kind ~~ 'OBJECT';
 
-        try
-        {
+#        try
+#        {
 
             my $operation = $document.GetOperation($operationName);
 
@@ -200,27 +201,27 @@ class GraphQL::Schema
             my $objectType = $operation.operation eq 'mutation'
                              ?? $.mutationType !! $.queryType;
 
-            my $ret = 
-            {
-                data => self.ExecuteSelectionSet(:$selectionSet,
-                                                 :$objectType,
-                                                 :$objectValue,
-                                                 :%variables,
-                                                 :$document);
-            };
+            my $ret = self.ExecuteSelectionSet(:$selectionSet,
+                                               :$objectType,
+                                               :$objectValue,
+                                               :%variables,
+                                               :$document);
 
-            $ret<errors> = @errors if @errors;
+#            $ret<errors> = @errors if @errors;
 
-            return $ret;
+            return GraphQL::Response.new(
+                name => 'data',
+                type => GraphQL::Object,
+                value => $ret);
 
-            CATCH {
-                default {
-                    push @errors, { message => .Str };
-                }
-            }
-        }
+#            CATCH {
+#                default {
+#                    push @errors, { message => .Str };
+#                }
+#            }
+#        }
 
-        return { errors => @errors };
+#        return { errors => @errors };
     }
 
     method ExecuteSelectionSet(:@selectionSet,
@@ -234,7 +235,7 @@ class GraphQL::Schema
                                             :%variables,
                                             :$document);
 
-        my $resultMap = Hash::Ordered.new;
+        my @results;
 
         for $groupedFieldSet.kv -> $responseKey, @fields
         {
@@ -242,13 +243,16 @@ class GraphQL::Schema
 
             my $responseValue;
 
+            my $fieldType;
+
             if ($fieldName eq '__typename')
             {
                 $responseValue = $objectType.name;
+                $fieldType = $GraphQLString;
             }
             else
             {
-                my $fieldType = $objectType.field($fieldName).type
+                $fieldType = $objectType.field($fieldName).type
                     or die qq{Cannot query field "$fieldName" } ~
                            qq{on type "$objectType.name()".};
 
@@ -260,10 +264,13 @@ class GraphQL::Schema
                                                    :$document);
             }
 
-            $resultMap{$responseKey} = $responseValue;
+            push @results, GraphQL::Response.new(
+                               name => $responseKey,
+                               type => $fieldType,
+                               value => $responseValue);
         }
 
-        return $resultMap;
+        return @results;
     }
 
     method ExecuteField(GraphQL::Object :$objectType,
@@ -286,11 +293,25 @@ class GraphQL::Schema
                                               :$fieldName,
                                               :%argumentValues);
 
-        return self.CompleteValue(:$fieldType,
-                                  :@fields,
-                                  :result($resolvedValue),
-                                  :%variables,
-                                  :$document);
+        if $resolvedValue ~~ Promise
+        {
+            return $resolvedValue.then(
+                {
+                    self.CompleteValue(:$fieldType,
+                                       :@fields,
+                                       :result($resolvedValue.result),
+                                       :%variables,
+                                       :$document)
+                });
+        }
+        else
+        {
+            return self.CompleteValue(:$fieldType,
+                                      :@fields,
+                                      :result($resolvedValue),
+                                      :%variables,
+                                      :$document);
+        }
     }
 
     method CompleteValue(GraphQL::Type :$fieldType,
@@ -301,6 +322,11 @@ class GraphQL::Schema
     {
         given $fieldType
         {
+            when GraphQL::Scalar
+            {
+                return $result;
+            }
+
             when GraphQL::Non-Null
             {
                 my $completedResult = 
@@ -321,17 +347,13 @@ class GraphQL::Schema
             {
                 die "Must return a List" unless $result ~~ List | Seq;
                 
-                return $result.map({ self.CompleteValue(
+                my $list = $result.map({ self.CompleteValue(
                                          :fieldType($fieldType.ofType),
                                          :@fields,
                                          :result($_),
                                          :%variables,
-                                         :$document)});
-            }
-
-            when GraphQL::Scalar
-            {
-                return $result // Nil;
+                                         :$document) });
+                return $list;
             }
 
             when GraphQL::Object | GraphQL::Interface | GraphQL::Union
@@ -349,6 +371,7 @@ class GraphQL::Schema
                                                 :$objectValue,
                                                 :%variables,
                                                 :$document);
+
             }
 
             when GraphQL::Enum
@@ -378,13 +401,17 @@ class GraphQL::Schema
 
 sub MergeSelectionSets(:@fields)
 {
-    gather
+    my @list;
+
+    for @fields -> $field
     {
-        for @fields -> $field
+        for $field.selectionset -> $sel
         {
-            take $_ for $field.selectionset;
+            push @list, $sel;
         }
     }
+
+    return @list;
 }
 
 sub CoerceVariableValues(GraphQL::Operation :$operation,
@@ -394,29 +421,13 @@ sub CoerceVariableValues(GraphQL::Operation :$operation,
 
     for $operation.vars -> $v
     {
-        unless %variables{$v.name}
-        {
-            if $v.defaultValue.defined
-            {
-                %coercedValues{$v.name} = $v.defaultValue;
-            }
-            if $v.type ~~ GraphQL::Non-Null
-            {
-                die "Must set value for Non-Nullable type $v.type.name() "
-                    ~ "for variable \$$v.name"
-            }
-            next;
-        }
-        %coercedValues{$v.name} = %variables{$v.name};
+        %coercedValues{$v.name} = $v.type.coerce(%variables{$v.name}
+                                                 // $v.defaultValue);
     }
 
     return %coercedValues;
 }
 
-#
-# $objectType is the schema definition for the object
-# $field is the query field
-#
 sub CoerceArgumentValues(GraphQL::Object :$objectType,
                          GraphQL::QueryField :$field,
                          :%variables)
@@ -427,15 +438,14 @@ sub CoerceArgumentValues(GraphQL::Object :$objectType,
     {
         my $value = $field.args{$arg.name};
 
-        if $value ~~ GraphQL::Variable
+        if $value ~~ GraphQL::Variable and %variables{$value.name}:exists
         {
-            $value = %variables{$value.name} // $arg.defaultValue //
-                die "Must provide $arg.name()";
+            $value = %variables{$value.name};
         }
 
-        %coercedValues{$arg.name} = $value //
-            $arg.defaultValue //
-            die "Must provide $arg.name()";
+        $value //= $arg.defaultValue // die "Must provide $arg.name()";
+
+        %coercedValues{$arg.name} = $arg.type.coerce($value);
     }
 
     return %coercedValues;
@@ -579,12 +589,6 @@ sub ResolveFieldValue(GraphQL::Object :$objectType,
                       :%argumentValues)
 {
     my $field = $objectType.field($fieldName) or return;
-
-    if not $objectValue and $objectType.resolver
-    {
-        $objectValue = call-with-right-args($objectType.resolver,
-                                            |%argumentValues);
-    }
 
     if $field.resolver
     {

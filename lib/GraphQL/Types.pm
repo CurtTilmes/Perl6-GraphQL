@@ -45,31 +45,66 @@ class GraphQL::Scalar is GraphQL::Type
     has Str $.kind = 'SCALAR';
 
     method Str { self.description-comment ~ "scalar $.name\n" }
+
+    method to-json($name, $value, $indent)
+    {
+        qq<$indent"$name": > ~ ($value ?? qq<"$value"> !! 'null')
+    }
 }
 
 class GraphQL::String is GraphQL::Scalar
 {
     has Str $.name = 'String';
+
+    method coerce($value) { $value.Str }
 }
 
 class GraphQL::Int is GraphQL::Scalar
 {
     has Str $.name = 'Int';
+
+    method to-json($name, $value, $indent)
+    {
+        qq<$indent"$name": {$value}>
+    }
+
+    method coerce($value) { $value.Int }
 }
 
 class GraphQL::Float is GraphQL::Scalar
 {
     has Str $.name = 'Float';
+
+    method to-json($name, $value, $indent)
+    {
+        qq<$indent"$name": {$value}>
+    }
+
+    method coerce($value) { $value.Num }
 }
 
 class GraphQL::Boolean is GraphQL::Scalar
 {
     has Str $.name = 'Boolean';
+
+    method to-json($name, $value, $indent)
+    {
+        qq<$indent"$name": "{$value ?? 'true' !! 'false'}">
+    }
+
+    method coerce($value)
+    {
+        return True if $value eq 'true';
+        return False if $value eq 'false';
+        die "Bad Boolean Value $value";
+    }
 }
 
 class GraphQL::ID is GraphQL::Scalar
 {
     has Str $.name = 'ID';
+
+    method coerce($value) { $value }
 }
 
 #
@@ -87,6 +122,19 @@ class GraphQL::List is GraphQL::Type
     has GraphQL::Type $.ofType is rw;
     
     method name { '[' ~ $.ofType.name ~ ']' }
+
+    method to-json($name, $value, $indent)
+    {
+        qq<$indent"$name": \[\n> ~
+            $value.map({ $!ofType.to-json(Str, $_, $indent ~ '  ') })
+                  .join(",\n") ~
+        qq<\n$indent]>
+    }
+
+    method coerce($value)
+    {
+        say "coercing a list!";
+    }
 }
 
 class GraphQL::Non-Null is GraphQL::Type
@@ -95,7 +143,19 @@ class GraphQL::Non-Null is GraphQL::Type
     has GraphQL::Type $.ofType is rw;
 
     method name { $!ofType.name ~ '!' }
+
     method Str  { $!ofType.Str  ~ '!' }
+
+    method coerce($value)
+    {
+        die "Null in Non-Null field" unless $value.defined;
+        $!ofType.coerce($value)
+    }
+
+    method to-json($name, $value, $indent)
+    {
+        $!ofType.to-json($name, $value, $indent);
+    }
 }
 
 class GraphQL::InputValue is GraphQL::Type
@@ -180,6 +240,13 @@ class GraphQL::Object is GraphQL::Type does HasFields
                 if @.interfaces)
         ~ "\{\n" ~ self.fields-str('  ') ~ "\n}\n"
     }
+
+    method to-json($name, $value, $indent)
+    {
+        $indent ~ (qq<"$name": > if $name) ~ "\{\n" ~
+            $value.map({ .to-json($indent ~ '  ') }).join(",\n") ~
+        qq<\n$indent}>
+    }
 }
 
 class GraphQL::InputObject is GraphQL::Type
@@ -192,6 +259,17 @@ class GraphQL::InputObject is GraphQL::Type
         self.description-comment ~
         "input $.name " ~
         ~ "\{\n" ~ @!inputFields.map({'  ' ~ .Str}).join("\n") ~ "\n}\n"
+    }
+
+    method coerce(%value)
+    {
+        my %c;
+        for @!inputFields -> $f
+        {
+            %c{$f.name} = $f.type.coerce(%value{$f.name})
+                if %value{$f.name}:exists;
+        }
+        return %c;
     }
 }
 
