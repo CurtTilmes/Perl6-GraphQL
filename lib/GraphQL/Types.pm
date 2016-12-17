@@ -14,7 +14,7 @@ class GraphQL::Type
 
     method description-comment(Str $indent = '')
     {
-        return unless $!description;
+        return '' unless $!description;
 
         wrap-text($!description, :width(75 - $indent.chars),
                   :prefix("$indent# "));
