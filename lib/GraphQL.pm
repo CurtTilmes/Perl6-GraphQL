@@ -16,7 +16,7 @@ class GraphQL::Schema
     has Str $.query is rw = 'Query';
     has Str $.mutation is rw;
     has Str $.subscription is rw;
-    has @errors;
+    has @.errors;
 
     multi method new(:$query, :$mutation, :$subscription, :$resolvers, *@types)
         returns GraphQL::Schema
@@ -173,6 +173,11 @@ class GraphQL::Schema
         }
     }
 
+    method error(:$message)
+    {
+        push @!errors, GraphQL::Error.new(:$message);
+    }
+
     # ExecuteRequest() == $schema.execute()
     method execute(Str $query?,
                    GraphQL::Document :$document = self.document($query),
@@ -180,12 +185,12 @@ class GraphQL::Schema
                    :%variables,
                    :$initialValue)
     {
+        @!errors = ();
+
         die "Missing root query type $!query()"
             unless self.queryType
             and self.queryType.kind ~~ 'OBJECT';
 
-#        try
-#        {
 
             my $operation = $document.GetOperation($operationName);
 
@@ -199,29 +204,45 @@ class GraphQL::Schema
             my $objectType = $operation.operation eq 'mutation'
                              ?? $.mutationType !! $.queryType;
 
-            my $ret = self.ExecuteSelectionSet(:$selectionSet,
-                                               :$objectType,
-                                               :$objectValue,
-                                               :%variables,
-                                               :$document);
+        my $ret;
 
-#            $ret<errors> = @errors if @errors;
+        try {
+            $ret = self.ExecuteSelectionSet(:$selectionSet,
+                                            :$objectType,
+                                            :$objectValue,
+                                            :%variables,
+                                            :$document);
+            CATCH {
+                default {
+                    self.error(message => $_.Str);
+                }
+            }
+        }
 
-            return GraphQL::Response.new(
+        my @response;
+
+        if $ret
+        {
+            push @response, GraphQL::Response.new(
+                name => 'data',
                 type => GraphQL::Object,
-                value => GraphQL::Response.new(
-                    name => 'data',
-                    type => GraphQL::Object,
-                    value => $ret));
+                value => $ret
+            );
+        }
 
-#            CATCH {
-#                default {
-#                    push @errors, { message => .Str };
-#                }
-#            }
-#        }
+        if @!errors
+        {
+            push @response, GraphQL::Response.new(
+                name => 'errors',
+                type => GraphQL::List.new(ofType => GraphQL::Object),
+                value => @!errors
+            );
+        }
 
-#        return { errors => @errors };
+        return GraphQL::Response.new(
+            type => GraphQL::Object,
+            value => @response
+        );
     }
 
     method ExecuteSelectionSet(:@selectionSet,
@@ -255,8 +276,8 @@ class GraphQL::Schema
             else
             {
                 $fieldType = $objectType.field($fieldName).type
-                    or die qq{Cannot query field "$fieldName" } ~
-                           qq{on type "$objectType.name()".};
+                    or die qq{Cannot query field '$fieldName' } ~
+                           qq{on type '$objectType.name()'.};
 
                 $responseValue = self.ExecuteField(:$objectType, 
                                                    :$objectValue,

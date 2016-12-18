@@ -15,3 +15,14 @@ class GraphQL::Response
         $!type.to-json($!name, $!value, $indent);
     }
 }
+
+class GraphQL::Error is GraphQL::Response
+{
+    has Str $.message;
+    has Str @.locations;
+
+    method to-json(Str $indent = '')
+    {
+        qq{$indent"message": "$!message"};
+    }
+}
