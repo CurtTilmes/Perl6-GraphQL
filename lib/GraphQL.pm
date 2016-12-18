@@ -142,8 +142,9 @@ class GraphQL::Schema
 
     method document(Str $query) returns GraphQL::Document
     {
-        GraphQL::Grammar.parse($query,
-                               :actions(GraphQL::Actions.new(:schema(self))),
+        my $actions = GraphQL::Actions.new(:schema(self));
+
+        GraphQL::Grammar.parse($query, :$actions,
                                rule => 'Document')
             or die "Failed to parse query";
         

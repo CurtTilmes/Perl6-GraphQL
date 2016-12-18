@@ -12,7 +12,7 @@ token UnicodeBOM { \x[FEFF] }
 token WhiteSpace { \x[0009] | \x[0020] }
 
 token LineTerminator
-{ [ \x[000A] | \x[000D]<!before \x[000A]> | \x[000D]\x[000A] ]}
+{ \x[000A] | \x[000D]<!before \x[000A]> | \x[000D]\x[000A] }
 
 token Comment { '#' <.CommentChar>* }
 
