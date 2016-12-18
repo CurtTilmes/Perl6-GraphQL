@@ -181,17 +181,22 @@ class GraphQL::Schema
 
     # ExecuteRequest() == $schema.execute()
     method execute(Str $query?,
-                   GraphQL::Document :$document = self.document($query),
+                   GraphQL::Document :document($doc),
                    Str :$operationName,
                    :%variables,
                    :$initialValue)
     {
         @!errors = ();
 
-        die "Missing root query type $!query()"
-            unless self.queryType
-            and self.queryType.kind ~~ 'OBJECT';
+        my $ret;
 
+        try
+        {
+            my $document = $doc // self.document($query);
+
+            die "Missing root query type $!query()"
+                unless self.queryType
+                and self.queryType.kind ~~ 'OBJECT';
 
             my $operation = $document.GetOperation($operationName);
 
@@ -205,9 +210,6 @@ class GraphQL::Schema
             my $objectType = $operation.operation eq 'mutation'
                              ?? $.mutationType !! $.queryType;
 
-        my $ret;
-
-        try {
             $ret = self.ExecuteSelectionSet(:$selectionSet,
                                             :$objectType,
                                             :$objectValue,
