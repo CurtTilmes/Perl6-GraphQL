@@ -225,7 +225,7 @@ Q<<{
 
 'query ($x: Boolean) { user(id: 4) { id, name @skip(if: $x)} }',
 
-{ x => 'false' },
+{ x => False },
 
 Q<<{
   "data": {
@@ -241,7 +241,7 @@ Q<<{
 
 'query ($x: Boolean) { user(id: 4) { id, name @include(if: $x)} }',
 
-{x => 'true'},
+{x => True},
 
 Q<<{
   "data": {
@@ -288,7 +288,7 @@ Q<<{
 
 'query ($x: Boolean) { user(id: 4) { id, name @include(if: $x)} }',
 
-{ x => 'false' },
+{ x => False },
 
 Q<<{
   "data": {
@@ -303,7 +303,7 @@ Q<<{
 
 'query ($x: Boolean) { user(id: 4) { id, name @include(if: $x)} }',
 
-{x => 'true'},
+{x => True},
 
 Q<<{
   "data": {
