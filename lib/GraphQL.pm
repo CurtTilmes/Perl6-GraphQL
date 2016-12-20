@@ -182,22 +182,22 @@ class GraphQL::Schema
 
     method perl-type($type) returns GraphQL::Type
     {
-        do given $type.^name
+        do given $type
         {
-            when 'GraphQL::Types::ID'   { $GraphQLID      }
-            when 'Str'                  { $GraphQLString  }
-            when 'Bool'                 { $GraphQLBoolean }
-            when 'Num'                  { $GraphQLFloat   }
-            when 'Cool'                 { $GraphQLID      }
-
-            when /^Array\[(.+)\]$/
+            when Array
             {
                 GraphQL::List.new(ofType => self.perl-type($type.of));
             }
 
+            when Bool   { $GraphQLBoolean }
+            when Str    { $GraphQLString  }
+            when Int    { $GraphQLInt     }
+            when Num    { $GraphQLFloat   }
+            when Cool   { $GraphQLID      }
+
             default
             {
-                %!types{$_} // die "No defined type for $_"
+                %!types{$_.^name} // die "No defined type for $_.^name()"
             }
         }
     }
