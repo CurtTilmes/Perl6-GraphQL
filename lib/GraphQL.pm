@@ -9,6 +9,13 @@ use GraphQL::Response;
 my Set $defaultTypes = set $GraphQLInt, $GraphQLFloat, $GraphQLString,
                            $GraphQLBoolean, $GraphQLID;
 
+my Set $background-methods;
+
+multi sub trait_mod:<is>(Method $m, :$graphql-background!) is export
+{
+    $background-methods ∪= $m;
+}
+
 class GraphQL::Schema
 {
     has GraphQL::Type %!types;
@@ -727,8 +734,16 @@ sub ResolveFieldValue(GraphQL::Object :$objectType,
     }
     elsif $field.resolver ~~ Method
     {
-        $field.resolver.package."$fieldName"(
-            |ResolveArgs($field.resolver.signature, |%argumentValues))
+        if $field.resolver ∈ $background-methods
+        {
+            return start $field.resolver.package."$fieldName"(
+                |ResolveArgs($field.resolver.signature, |%argumentValues))
+        }
+        else
+        {
+            $field.resolver.package."$fieldName"(
+                |ResolveArgs($field.resolver.signature, |%argumentValues))
+        }
     }
     else
     {

@@ -44,14 +44,17 @@ class UserInput is GraphQL::InputObjectClass
 class Query
 {
     method user(ID :$id --> User)
+        is graphql-background
     {
+        sleep 2;
         @users[$id.Int] // Nil
     }
 
     method listusers(Int :$start, Int :$count --> Array[User])
+        is graphql-background
     {
         Array[User].new(
-            ($start ..^ $start+$count).map({ Query.user(:id($_)) })
+            await ($start ..^ $start+$count).map({ start Query.user(:id($_)) })
         );
     }
 }
