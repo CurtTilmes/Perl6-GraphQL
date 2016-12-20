@@ -270,7 +270,7 @@ class GraphQL::InputObject is GraphQL::Type
 
     method coerce(%value)
     {
-        return $!class.new(|%value) if $!class.defined;
+        return $!class.new(|%value) if $!class ~~ GraphQL::InputObjectClass;
 
         my %c;
         for @!inputFields -> $f
