@@ -51,13 +51,7 @@ class Query
     method listusers(Int :$start, Int :$count --> Array[User])
     {
         Array[User].new(
-            gather
-            {
-                for $start ..^ $start+$count -> $id
-                {
-                    take Query.user(:$id)
-                }
-            }
+            ($start ..^ $start+$count).map({ Query.user(:id($_)) })
         );
     }
 }
