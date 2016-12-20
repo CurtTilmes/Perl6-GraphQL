@@ -14,8 +14,12 @@ type User {
     someextra: String
 }
 
+type Query {
+  user: User
+}
+
 schema {
-    query: User
+    query: Query
 }'), 'Make schema';
 
 class User
@@ -33,7 +37,7 @@ my $somebody = User.new(id => 7,
 
 $schema.resolvers(
 {
-    User => sub { return $somebody }
+    Query => { user => sub { return $somebody } }
 });
 
 $schema.resolvers(
@@ -45,11 +49,13 @@ $schema.resolvers(
 
 ok my $document = $schema.document('
 query {
-    name
-    id
-    birthday
-    status
-    someextra
+    user {
+        name
+        id
+        birthday
+        status
+        someextra
+    }
 }
 '), 'Make document';
 
@@ -58,11 +64,13 @@ ok my $ret = $schema.execute(:$document), 'Execute query';
 is $ret.to-json, 
 Q<<{
   "data": {
-    "name": null,
-    "id": null,
-    "birthday": null,
-    "status": "false",
-    "someextra": "an extra field"
+    "user": {
+      "name": "Fred",
+      "id": "7",
+      "birthday": "Friday",
+      "status": "true",
+      "someextra": "an extra field"
+    }
   }
 }>>, 'Compare results';
 

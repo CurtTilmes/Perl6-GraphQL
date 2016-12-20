@@ -1,6 +1,10 @@
 unit module GraphQL::Types;
 use Text::Wrap;
 
+subset ID of Cool is export;
+
+class GraphQL::InputObjectClass {}
+
 class GraphQL::Type
 {
     has Str $.name;
@@ -170,7 +174,7 @@ class GraphQL::Field is GraphQL::Type does Deprecatable
 {
     has GraphQL::Type $.type is rw;
     has GraphQL::InputValue @.args is rw;
-    has Sub $.resolver is rw;
+    has Callable $.resolver is rw;
 
     method Str(Str $indent = '')
     {
@@ -218,7 +222,6 @@ class GraphQL::Object is GraphQL::Type does HasFields
 {
     has Str $.kind = 'OBJECT';
     has GraphQL::Interface @.interfaces is rw;
-    has $.resolver is rw;
 
     method addfield($field) { push @!fields, $field }
     
@@ -249,12 +252,14 @@ class GraphQL::Object is GraphQL::Type does HasFields
 
         !! 'null')
     }
+
 }
 
 class GraphQL::InputObject is GraphQL::Type
 {
     has Str $.kind = 'INPUT_OBJECT';
     has GraphQL::InputValue @.inputFields;
+    has $.class;
 
     method Str
     {
@@ -265,6 +270,8 @@ class GraphQL::InputObject is GraphQL::Type
 
     method coerce(%value)
     {
+        return $!class.new(|%value) if $!class.defined;
+
         my %c;
         for @!inputFields -> $f
         {
@@ -461,3 +468,4 @@ class GraphQL::Document
         ~ "\n";
     }
 }
+

@@ -497,7 +497,7 @@ method InputField($/)
 method TypeSchema($/)
 {
     # Add all the newly defined types to the schema
-    $!schema.addtype(|@!newtypes);
+    $!schema.add-type(|@!newtypes);
 
     #
     # Go through all the saved @fields-to-type and @lists-to-type, look

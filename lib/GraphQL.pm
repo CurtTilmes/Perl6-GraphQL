@@ -23,7 +23,7 @@ class GraphQL::Schema
     {
         my $schema = GraphQL::Schema.bless;
 
-        $schema.addtype($defaultTypes.keys);
+        $schema.add-type($defaultTypes.keys);
 
         my $actions = GraphQL::Actions.new(:$schema);
 
@@ -32,23 +32,23 @@ class GraphQL::Schema
                                rule => 'TypeSchema')
             or die "Failed to parse Introspection Schema";
 
-        $schema.addtype(|@types) if @types;
-
-        if $query
+        for @types
         {
-            $schema.query = $query;
-            $schema!add-meta-fields;
+            when GraphQL::Type { $schema.add-type($_) }
+
+            when GraphQL::InputObjectClass { $schema.add-inputobject($_) }
+
+            default { $schema.add-class($_) }
         }
 
-        if $mutation
-        {
-            $schema.mutation = $mutation;
-        }
+        $schema.query = $query if $query;
 
-        if $subscription
-        {
-            $schema.subscription = $subscription;
-        }
+        $schema.mutation = $mutation if $mutation;
+        $schema.mutation = 'Mutation' if $schema.type('Mutation');
+
+        $schema.subscription = $subscription if $subscription;
+
+        $schema!add-meta-fields if $schema.query and $schema.queryType;
 
         $schema.resolvers($resolvers) if $resolvers;
 
@@ -98,7 +98,7 @@ class GraphQL::Schema
 
     method types { %!types.values }
 
-    method addtype(*@newtypes)
+    method add-type(*@newtypes)
     {
         for @newtypes -> $newtype
         {
@@ -106,9 +106,103 @@ class GraphQL::Schema
         }
     }
 
+    method maketype(Str $rule, Str $desc) returns GraphQL::Type
+    {
+        my $actions = GraphQL::Actions.new(:schema(self));
+
+        GraphQL::Grammar.parse($desc, :$rule, :$actions).made;
+    }
+
+    method add-class($t)
+    {
+        my @fields;
+
+        for $t.^attributes -> $a
+        {
+            my $var = $a ~~ /<-[!]>+$/;
+            my $name = $var.Str;
+
+            my $type = self.perl-type($a.type);
+
+            push @fields, GraphQL::Field.new(:$name, :$type);
+        }
+
+        for $t.^methods -> $m
+        {
+            next if @fields.first: { $m.name eq $_.name };
+
+            my GraphQL::InputValue @args;
+
+            my $sig = $m.signature;
+
+            my $type = self.perl-type($sig.returns);
+
+            for $sig.params -> $p
+            {
+                next unless $p.named or $p.slurpy;
+                my $name = $p.named_names[0] or next;
+                my $type = self.perl-type($p.type);
+                push @args, GraphQL::InputValue.new(:$name, :$type);
+            }
+
+            push @fields, GraphQL::Field.new(:name($m.name),
+                                             :$type,
+                                             :@args,
+                                             :resolver($m));
+        }
+
+        self.add-type(GraphQL::Object.new(name => $t.^name,
+                                          fields => @fields));
+    }
+
+    method add-inputobject($t)
+    {
+        my @inputfields;
+
+        for $t.^attributes -> $a
+        {
+            my $var = $a ~~ /<-[!]>+$/;
+            my $name = $var.Str;
+
+            my $type = self.perl-type($a.type);
+
+            push @inputfields, GraphQL::InputValue.new(:$name, :$type);
+        }
+
+        self.add-type(GraphQL::InputObject.new(name => $t.^name,
+                                               inputFields => @inputfields,
+                                               class => $t));
+    }
+
     method type($typename) returns GraphQL::Type { %!types{$typename} }
 
-    method queryType returns GraphQL::Object { %!types{$!query} }
+    method perl-type($type) returns GraphQL::Type
+    {
+        do given $type.^name
+        {
+            when 'GraphQL::Types::ID'   { $GraphQLID      }
+            when 'Str'                  { $GraphQLString  }
+            when 'Bool'                 { $GraphQLBoolean }
+            when 'Num'                  { $GraphQLFloat   }
+            when 'Cool'                 { $GraphQLID      }
+
+            when /^Array\[(.+)\]$/
+            {
+                GraphQL::List.new(ofType => self.perl-type($type.of));
+            }
+
+            default
+            {
+                %!types{$_} // die "No defined type for $_"
+            }
+        }
+    }
+
+    method queryType returns GraphQL::Object
+    {
+        return unless $!query and %!types{$!query};
+        %!types{$!query}
+    }
 
     method mutationType returns GraphQL::Object
     {
@@ -157,19 +251,12 @@ class GraphQL::Schema
         {
             die "Undefined object $type" unless %!types{$type};
 
-            if ($obj ~~ Associative)
+            for $obj.kv -> $field, $resolver
             {
-                for $obj.kv -> $field, $resolver
-                {
-                    die "Undefined field $field for $type"
-                        unless %!types{$type}.field($field);
+                die "Undefined field $field for $type"
+                    unless %!types{$type}.field($field);
                     
-                    %!types{$type}.field($field).resolver = $resolver;
-                }
-            }
-            else
-            {
-                %!types{$type}.resolver = $obj;
+                %!types{$type}.field($field).resolver = $resolver;
             }
         }
     }
@@ -416,13 +503,6 @@ class GraphQL::Schema
     {
         die "ResolveAbstractType";
     }
-
-    method maketype(Str $rule, Str $desc) returns GraphQL::Type
-    {
-        my $actions = GraphQL::Actions.new(:schema(self));
-
-        GraphQL::Grammar.parse($desc, :$rule, :$actions).made;
-    }
 }
 
 sub MergeSelectionSets(:@fields)
@@ -604,10 +684,11 @@ sub CollectFields(GraphQL::Object :$objectType,
     return @responsekeys.map( { $_ => %groupedFields{$_} } );
 }
 
-sub call-with-right-args(Sub $sub, *%allargs)
+sub ResolveArgs(Signature $sig, *%allargs)
 {
     my %args;
-    for $sub.signature.params -> $p
+
+    for $sig.params -> $p
     {
         if ($p.named)
         {
@@ -622,25 +703,35 @@ sub call-with-right-args(Sub $sub, *%allargs)
         }
     }
 
-    $sub(|%args);
+    return %args;
 }
 
 sub ResolveFieldValue(GraphQL::Object :$objectType,
-                      :$objectValue! is rw,
+                      :$objectValue!,
                       :$fieldName,
                       :%argumentValues)
 {
     my $field = $objectType.field($fieldName) or return;
 
-    if $field.resolver
+    if $field.resolver ~~ Sub
     {
-        return call-with-right-args($field.resolver,
-                                    :$objectValue,
-                                    |%argumentValues);
+        $field.resolver.(|ResolveArgs($field.resolver.signature,
+                                      :$objectValue,
+                                      |%argumentValues));
     }
-
-    if $objectValue.^can($fieldName)
+    elsif $objectValue.^lookup($fieldName) -> $method
     {
-        return $objectValue."$fieldName"();
+        $objectValue."$fieldName"(|ResolveArgs($method.signature,
+                                               :$objectValue,
+                                               |%argumentValues))
+    }
+    elsif $field.resolver ~~ Method
+    {
+        $field.resolver.package."$fieldName"(
+            |ResolveArgs($field.resolver.signature, |%argumentValues))
+    }
+    else
+    {
+        return Nil;
     }
 }
