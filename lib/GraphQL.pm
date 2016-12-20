@@ -39,14 +39,7 @@ class GraphQL::Schema
                                rule => 'TypeSchema')
             or die "Failed to parse Introspection Schema";
 
-        for @types
-        {
-            when GraphQL::Type { $schema.add-type($_) }
-
-            when GraphQL::InputObjectClass { $schema.add-inputobject($_) }
-
-            default { $schema.add-class($_) }
-        }
+        $schema.add-type(@types);
 
         $schema.query = $query if $query;
 
@@ -107,9 +100,13 @@ class GraphQL::Schema
 
     method add-type(*@newtypes)
     {
-        for @newtypes -> $newtype
+        for @newtypes
         {
-            %!types{$newtype.name} = $newtype;
+            when GraphQL::Type { %!types{$_.name} = $_; }
+
+            when GraphQL::InputObjectClass { self.add-inputobject($_) }
+
+            default { self.add-class($_) }
         }
     }
 
