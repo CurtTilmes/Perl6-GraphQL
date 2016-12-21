@@ -106,6 +106,8 @@ class GraphQL::Schema
 
             when GraphQL::InputObjectClass { self.add-inputobject($_) }
 
+            when Enumeration { self.add-enum($_) }
+
             default { self.add-class($_) }
         }
     }
@@ -143,7 +145,7 @@ class GraphQL::Schema
 
             for $sig.params -> $p
             {
-                next unless $p.named or $p.slurpy;
+                next unless $p.named;
                 my $name = $p.named_names[0] or next;
                 my $type = self.perl-type($p.type);
                 push @args, GraphQL::InputValue.new(:$name, :$type);
@@ -178,12 +180,27 @@ class GraphQL::Schema
                                                class => $t));
     }
 
+    method add-enum(Enumeration $t)
+    {
+        self.add-type(GraphQL::Enum.new(
+                          name => $t.^name,
+                          enumValues => $t.enums.map({
+                              GraphQL::EnumValue.new(name => $_.key)
+                          })
+                      ));
+    }
+
     method type($typename) returns GraphQL::Type { %!types{$typename} }
 
     method perl-type($type) returns GraphQL::Type
     {
         do given $type
         {
+            when Enumeration
+            {
+                %!types{$_.^name} // die "Unknown Enum $_.^name()"
+            }
+
             when Array
             {
                 GraphQL::List.new(ofType => self.perl-type($type.of));
@@ -439,6 +456,11 @@ class GraphQL::Schema
     {
         given $fieldType
         {
+            when GraphQL::Enum
+            {
+                return $fieldType.valid($result) ?? $result !! Nil;
+            }
+
             when GraphQL::Scalar
             {
                 return $result;
@@ -489,11 +511,6 @@ class GraphQL::Schema
                                                 :%variables,
                                                 :$document);
 
-            }
-
-            when GraphQL::Enum
-            {
-                return $fieldType.valid($result) ?? $result !! Nil;
             }
 
             default 

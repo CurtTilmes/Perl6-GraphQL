@@ -53,7 +53,7 @@ class GraphQL::Scalar is GraphQL::Type
 
     method to-json($name, $value, $indent)
     {
-        qq<$indent"$name": > ~ ($value ?? qq<"$value"> !! 'null')
+        qq<$indent"$name": > ~ ($value.defined ?? qq<"$value"> !! 'null')
     }
 }
 
@@ -313,6 +313,7 @@ class GraphQL::Enum is GraphQL::Scalar
     
     method valid($value) returns Bool
     {
+        return Nil unless $value.defined;
         so @.enumValues.first({ .name eq $value });
     }
 

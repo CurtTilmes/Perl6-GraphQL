@@ -4,42 +4,51 @@ use GraphQL;
 use GraphQL::Types;
 use GraphQL::Server;
 
+enum State <NOT_FOUND ACTIVE INACTIVE SUSPENDED>;
+
 class User
 {
     has ID $.id is rw;
     has Str $.name is rw;
     has Str $.birthday is rw;
     has Bool $.status is rw;
+    has State $.state is rw;
 }
-
-my @users =
-    User.new(id => "0",
-             name => 'Gilligan',
-             birthday => 'Friday',
-             status => True),
-    User.new(id => "1",
-             name => 'Skipper',
-             birthday => 'Monday',
-             status => False),
-    User.new(id => "2",
-             name => 'Professor',
-             birthday => 'Tuesday',
-             status => True),
-    User.new(id => "3",
-             name => 'Ginger',
-             birthday => 'Wednesday',
-             status => True),
-    User.new(id => "4",
-             name => 'Mary Anne',
-             birthday => 'Thursday',
-             status => True);
 
 class UserInput is GraphQL::InputObjectClass
 {
     has Str $.name;
     has Str $.birthday;
     has Bool $.status;
+    has State $.state;
 }
+
+my User @users =
+    User.new(id => "0",
+             name => 'Gilligan',
+             birthday => 'Friday',
+             status => True,
+             state => NOT_FOUND),
+    User.new(id => "1",
+             name => 'Skipper',
+             birthday => 'Monday',
+             status => False,
+             state => ACTIVE),
+    User.new(id => "2",
+             name => 'Professor',
+             birthday => 'Tuesday',
+             status => True,
+             state => INACTIVE),
+    User.new(id => "3",
+             name => 'Ginger',
+             birthday => 'Wednesday',
+             status => True,
+             state => SUSPENDED),
+    User.new(id => "4",
+             name => 'Mary Anne',
+             birthday => 'Thursday',
+             status => True,
+             state => ACTIVE);
 
 class Query
 {
@@ -47,7 +56,7 @@ class Query
         is graphql-background
     {
         sleep 2;
-        @users[$id.Int] // Nil
+        @users[$id]
     }
 
     method listusers(Int :$start, Int :$count --> Array[User])
@@ -66,13 +75,14 @@ class Mutation
         push @users, User.new(id => @users.elems,
                               name => $newuser.name,
                               birthday => $newuser.birthday,
-                              status => $newuser.status);
+                              status => $newuser.status,
+                              state => $newuser.state);
         return @users.elems - 1;
     }
 
     method updateuser(ID :$id, UserInput :$userinput --> User)
     {
-        for <name birthday status> -> $field
+        for <name birthday status state> -> $field
         {
             if $userinput."$field"().defined
             {
@@ -83,6 +93,6 @@ class Mutation
     }
 }
 
-my $schema = GraphQL::Schema.new(User, UserInput, Query, Mutation);
+my $schema = GraphQL::Schema.new(State, User, UserInput, Query, Mutation);
 
 GraphQL-Server($schema);

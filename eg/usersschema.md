@@ -1,21 +1,6 @@
 # Users example
 
-## GraphQL Types
-
-There are several core GraphQL scalar types that map to Perl basic
-scalar types:
-
-GraphQL Type | Perl 6 Type
------------- | -----------
-String       | Str
-Int          | Int
-Float        | Num
-Boolean      | Bool
-ID           | ID (subset of Cool)
-
-
-
-## Defining Types
+## Defining a schema
 
 The __Schema__ describes the interface for your application in detail.
 
