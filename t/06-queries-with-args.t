@@ -97,7 +97,7 @@ Q<<{
   "data": {
     "allusers": [
       {
-        "id": null,
+        "id": "0",
         "name": "Gilligan"
       }
     ]
