@@ -1,4 +1,4 @@
-use v6;
+#!/usr/bin/env perl6
 
 use GraphQL;
 use GraphQL::Types;
