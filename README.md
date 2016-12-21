@@ -8,26 +8,33 @@ for APIs originally created by Facebook.
 ## Intro
 
 Before we get into all the details, here's the Perl 6 GraphQL "Hello World"
+[hello.pl](https://github.com/golpa/Perl6-GraphQL/blob/master/eg/hello.pl)
+
 
 ```
 use GraphQL;
-use JSON::Fast;
+use GraphQL::Server;
 
-my $schema = GraphQL::Schema.new('type Query { hello: String }',
-    resolvers => { Query => { hello => sub { 'Hello World' } } });
-
-sub MAIN(Str $query)
+class Query
 {
-    say to-json $schema.execute($query);
+    method hello(--> Str) { 'Hello World' }
 }
+
+my $schema = GraphQL::Schema.new(Query);
+
+GraphQL-Server($schema);
+
 ```
 
-You can run this on the command line:
+You can run this with a GraphQL query on the command line:
 ```
-% perl6 hello.pl 
+$ perl6 hello.pl --help
 Usage:
   hello.pl <query> 
-% perl6 hello.pl '{hello}'
+  hello.pl [--filename=<Str>] 
+  hello.pl [--port=<Int>] 
+
+$ perl6 hello.pl '{hello}'
 {
   "data": {
     "hello": "Hello World"
@@ -37,18 +44,27 @@ Usage:
 
 You can even ask for information about the schema and types:
 ```
-% perl6 hello.pl '{__schema {types{name fields{name}}}}'
+$ perl6 hello.pl '{ __schema { queryType { name } } }'
 {
   "data": {
     "__schema": {
-      "types": [
+      "queryType": {
+        "name": "Query"
+      }
+    }
+  }
+}
+
+$ perl6 hello.pl '{ __type(name: "Query") { fields { name type { name }}}}'
+{
+  "data": {
+    "__type": {
+      "fields": [
         {
-          "name": "Query",
-          "fields": [
-            {
-              "name": "hello"
-            }
-          ]
+          "name": "hello",
+          "type": {
+            "name": "String"
+          }
         }
       ]
     }
@@ -57,34 +73,23 @@ You can even ask for information about the schema and types:
 ```
 
 That's fine for the command line, but you can also easily wrap GraphQL
-into a web server to expose that API to external clients.  If you have
-the Perl 6 web framework
-[Bailador](https://github.com/ufobat/Bailador), you can do that like this:
+into a web server to expose that API to external clients.  GraphQL::Server
+uses the Perl 6 web framework
+[Bailador](https://github.com/ufobat/Bailador) to do that:
 
 ```
-use Bailador;
-use GraphQL;
-use GraphQL::GraphiQL;
-use JSON::Fast;
+$ ./hello.pl
+Entering the development dance floor: http://0.0.0.0:3000
+[2016-12-21T13:02:38Z] Started HTTP server.
 
-my $schema = GraphQL::Schema.new('type Query { hello: String }',
-    resolvers => { Query => { hello => sub { 'Hello World' } } });
-
-get '/graphql' => sub { $GraphiQL }
-
-post '/graphql' => sub {
-    to-json($schema.execute(from-json(request.body)<query>));
-}
-
-baile;
 ```
 
-This says whenever someone sends an HTTP POST to the server path
-"/graphql", execute it with the schema, encode the resulting data
-structure with JSON and send it back.
+The server takes any GraphQL query sent with HTTP POST to /graphql,
+executes it against the GraphQL Schema, and returns the result in
+JSON.
 
 There is one additional feature.  If it receives a GET request to
-"/graphql", send back the
+"/graphql", it sends back the
 [GraphiQL](https://github.com/graphql/graphiql) graphical interactive
 in-browser GraphQL IDE.
 
@@ -94,8 +99,4 @@ You can use that to explore the schema (though the Hello World schema
 is very simple, that won't take long), and interactively construct and
 execute GraphQL queries.
 
-A real production implementation would do a lot more, setting
-content-types, taking queries on GET as well as POST, etc.
-
 See [eg/usersexample.md](https://github.com/golpa/Perl6-GraphQL/blob/master/eg/usersexample.md) for a more complicated example.
-

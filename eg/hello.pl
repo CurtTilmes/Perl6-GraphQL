@@ -3,7 +3,11 @@
 use GraphQL;
 use GraphQL::Server;
 
-my $schema = GraphQL::Schema.new('type Query { hello: String }',
-    resolvers => { Query => { hello => sub { 'Hello World' } } });
+class Query
+{
+    method hello(--> Str) { 'Hello World' }
+}
+
+my $schema = GraphQL::Schema.new(Query);
 
 GraphQL-Server($schema);
