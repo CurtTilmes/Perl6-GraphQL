@@ -194,7 +194,9 @@ class GraphQL::Schema
 
             my $type = self.perl-type($a.type);
 
-            push @fields, GraphQL::Field.new(:$name, :$type);
+            my $description = $a.WHY ?? ~$a.WHY !! Str;
+
+            push @fields, GraphQL::Field.new(:$name, :$type, :$description);
         }
 
         for $t.^methods -> $m
@@ -231,14 +233,20 @@ class GraphQL::Schema
                                                     :$defaultValue);
             }
 
+            my $description = $m.WHY ?? ~$m.WHY !! Str;
+
             push @fields, GraphQL::Field.new(:name($m.name),
                                              :$type,
                                              :@args,
-                                             :resolver($m));
+                                             :resolver($m),
+                                             :$description);
         }
 
+        my $description = $t.WHY ?? ~$t.WHY !! Str;
+
         self.add-type(GraphQL::Object.new(name => $t.^name,
-                                          fieldlist => @fields));
+                                          fieldlist => @fields,
+                                          :$description));
     }
 
     method add-inputobject($t)
@@ -252,18 +260,28 @@ class GraphQL::Schema
 
             my $type = self.perl-type($a.type);
 
-            push @inputfields, GraphQL::InputValue.new(:$name, :$type);
+            my $description = $a.WHY ?? ~$a.WHY !! Str;
+
+            push @inputfields, GraphQL::InputValue.new(:$name,
+                                                       :$type,
+                                                       :$description);
         }
+
+        my $description = $t.WHY ?? ~$t.WHY !! Str;
 
         self.add-type(GraphQL::InputObjectType.new(name => $t.^name,
                                                    inputFields => @inputfields,
-                                                   class => $t));
+                                                   class => $t,
+                                                   :$description));
     }
 
     method add-enum(Enumeration $t)
     {
+        my $description = $t.WHY ?? ~$t.WHY !! Str;
+
         self.add-type(GraphQL::Enum.new(
                           name => $t.^name,
+                          :$description,
                           enumValues => $t.enums.map({
                               GraphQL::EnumValue.new(name => $_.key)
                           })

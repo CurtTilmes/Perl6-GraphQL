@@ -7,22 +7,35 @@ use Cache::LRU;
 
 my $usercache = Cache::LRU.new;   # Key = User.id, Value = User
 
+#| State is an enumeration of possible states for the user.
 enum State <NOT_FOUND ACTIVE INACTIVE SUSPENDED>;
 
 class Query { ... }
 class Mutation { ...}
 
+#| User is for describing users.
 class User
 {
     trusts Mutation;
 
+    #| id field is unique identifier for each user.
     has ID $.id is rw;
-    has Str:D $.name is rw = "foo";
+
+    #| name field is the name of the user
+    has Str:D $.name is rw is required;
+
+    #| birthday field is just a string, put whatever you want in it.
     has Str $.birthday is rw;
+
+    #| status tells whether the user is true or false.
     has Bool $.status is rw;
+
+    #| state demonstrates an enumeration.
     has State $.state is rw;
+
     has Set $!friend-set = ∅;
 
+    #| friends returns an array of all this user's friends.
     method friends(--> Array[User]) is graphql-background
     {
         Array[User].new(
@@ -32,6 +45,7 @@ class User
         );
     }
 
+    #| random_friend picks a single friend from among this user's friends.
     method random_friend(--> User) is graphql-background
     {
         Query.user(:id($!friend-set.pick));

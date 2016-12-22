@@ -20,8 +20,7 @@ class GraphQL::Type
     {
         return '' unless $!description;
 
-        wrap-text($!description, :width(75 - $indent.chars),
-                  :prefix("$indent# ")) ~ "\n";
+        $indent ~ wrap-text($!description, :prefix("$indent# ")) ~ "\n";
     }
 
     method Str { $!name }
