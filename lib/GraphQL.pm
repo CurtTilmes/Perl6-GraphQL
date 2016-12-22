@@ -183,17 +183,26 @@ class GraphQL::Schema
 
         for $t.^attributes -> $a
         {
+            next unless $a.has_accessor;
+
             my $var = $a ~~ /<-[!]>+$/;
 
-            push @fields, GraphQL::Field.new(
-                name => $var.Str,
-                type => self.perl-type($a.type)
-            );
+            my $name = $var.Str;
+
+            die "Invalid characters in $name"
+                unless $name ~~ /^<[_A..Za..z]><[_0..9A..Za..z]>*$/;
+
+            my $type = self.perl-type($a.type);
+
+            push @fields, GraphQL::Field.new(:$name, :$type);
         }
 
         for $t.^methods -> $m
         {
             next if @fields.first: { $m.name eq $_.name };
+
+            die "Invalid characters in $m.name()"
+                unless $m.name ~~ /^<[_A..Za..z]><[_0..9A..Za..z]>*$/;
 
             my GraphQL::InputValue @args;
 
@@ -204,8 +213,14 @@ class GraphQL::Schema
             for $sig.params -> $p
             {
                 next unless $p.named;
+
                 my $name = $p.named_names[0] or next;
+
+                die "Invalid characters in $name"
+                    unless $name ~~ /^<[_A..Za..z]><[_0..9A..Za..z]>*$/;
+
                 my $type = self.perl-type($p.type);
+
                 push @args, GraphQL::InputValue.new(:$name, :$type);
             }
 
