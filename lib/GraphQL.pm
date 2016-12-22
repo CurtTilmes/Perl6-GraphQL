@@ -221,7 +221,14 @@ class GraphQL::Schema
 
                 my $type = self.perl-type($p.type);
 
-                push @args, GraphQL::InputValue.new(:$name, :$type);
+                $type = GraphQL::Non-Null.new(ofType => $type)
+                    unless $p.optional;
+
+                my $defaultValue = $p.default ?? $p.default.() !! Nil;
+
+                push @args, GraphQL::InputValue.new(:$name,
+                                                    :$type,
+                                                    :$defaultValue);
             }
 
             push @fields, GraphQL::Field.new(:name($m.name),
@@ -268,8 +275,16 @@ class GraphQL::Schema
         %!types{$name} // GraphQL::LazyType.new(:$name);
     }
 
-    method perl-type($type) returns GraphQL::Type
+    method perl-type($type, Bool :$nonnull) returns GraphQL::Type
     {
+        # There must be a better way...
+        if not $nonnull and $type.WHAT.perl ~~ /\:D$/
+        {
+            return GraphQL::Non-Null.new(
+                ofType => self.perl-type($type, :nonnull)
+            );
+        }
+
         do given $type
         {
             when Enumeration { self.type($_.^name) }

@@ -13,6 +13,8 @@ Float        | Num
 Boolean      | Bool
 ID           | ID (subset of Cool)
 
+Some more complicated types:
+
 
 
 ## Defining Types

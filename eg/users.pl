@@ -17,7 +17,7 @@ class User
     trusts Mutation;
 
     has ID $.id is rw;
-    has Str $.name is rw;
+    has Str:D $.name is rw = "foo";
     has Str $.birthday is rw;
     has Bool $.status is rw;
     has State $.state is rw;
@@ -25,9 +25,11 @@ class User
 
     method friends(--> Array[User]) is graphql-background
     {
-        Array[User].new(await $!friend-set.keys.map({
-                                  start Query.user(:id($_))
-                              }));
+        Array[User].new(
+            await $!friend-set.keys.map(
+                      { start Query.user(:id($_)) }
+                  )
+        );
     }
 
     method random_friend(--> User) is graphql-background
@@ -87,7 +89,7 @@ my User @users =
 
 class Query
 {
-    method user(ID :$id --> User)
+    method user(ID :$id! --> User)
         is graphql-background
     {
         return unless @users[$id];
@@ -97,7 +99,6 @@ class Query
             return $user;
         }
 
-        say "Sleeping for $id";
         sleep 2;
 
         my $user = @users[$id];
@@ -105,18 +106,20 @@ class Query
         $usercache.set($id, $user);
     }
 
-    method listusers(ID :$start, Int :$count --> Array[User])
+    method listusers(ID :$start = "0", Int :$count = 3 --> Array[User])
         is graphql-background
     {
         Array[User].new(
-            await ($start ..^ $start+$count).map({ start Query.user(:id($_)) })
+            await ($start ..^ $start+$count).map(
+                { start Query.user(:id($_)) }
+            )
         );
     }
 }
 
 class Mutation
 {
-    method adduser(UserInput :$newuser --> ID)
+    method adduser(UserInput :$newuser! --> ID)
     {
         push @users, User.new(id => @users.elems,
                               name => $newuser.name,
@@ -126,7 +129,7 @@ class Mutation
         return @users.elems - 1;
     }
 
-    method updateuser(ID :$id, UserInput :$userinput --> User)
+    method updateuser(ID :$id!, UserInput :$userinput! --> User)
     {
         for <name birthday status state> -> $field
         {
@@ -139,12 +142,12 @@ class Mutation
         return Query.user(:$id);
     }
 
-    method friend_add(ID :$id, ID :$friend_id --> Bool)
+    method friend_add(ID :$id!, ID :$friend_id! --> Bool)
     {
         @users[$id]!User::friend_add(:$friend_id);
     }
 
-    method friend_remove(ID :$id, ID :$friend_id --> Bool)
+    method friend_remove(ID :$id!, ID :$friend_id! --> Bool)
     {
         @users[$id]!User::friend_remove(:$friend_id);
     }
