@@ -40,15 +40,9 @@ class GraphQL::Schema
             or die "Failed to parse Introspection Schema";
 
         $schema.add-type(@types);
-
-        $schema.query = $query if $query;
-
-        $schema.mutation = $mutation if $mutation;
-        $schema.mutation = 'Mutation' if $schema.type('Mutation');
-
+        $schema.query        = $query        if $query;
+        $schema.mutation     = $mutation     if $mutation;
         $schema.subscription = $subscription if $subscription;
-
-        $schema!add-meta-fields if $schema.query and $schema.queryType;
 
         $schema.resolvers($resolvers) if $resolvers;
 
@@ -64,8 +58,6 @@ class GraphQL::Schema
 
         GraphQL::Grammar.parse($schemastring, :$actions, :rule('TypeSchema'))
             or die "Failed to parse schema";
-
-        $schema!add-meta-fields;
 
         $schema.resolvers($resolvers) if $resolvers;
 
@@ -96,6 +88,72 @@ class GraphQL::Schema
         ));
     }
 
+    has %!resolved;
+
+    method resolve-type(GraphQL::Type $type)
+    {
+        return $type if $type ~~ GraphQL::Object and %!resolved{$type.name}++;
+
+        given $type
+        {
+            when GraphQL::LazyType
+            {
+                my $realtype = self.type($type.name);
+
+                die "Can't resolve $type.name()"
+                    if $realtype ~~ GraphQL::LazyType;
+
+                return $realtype;
+            }
+            when GraphQL::Interface
+            {
+                $type.fieldlist .= map({ self.resolve-type($_) });
+            }
+            when GraphQL::Object
+            {
+                $type.fieldlist .= map({ self.resolve-type($_) });
+                $type.interfaces .= map({ self.resolve-type($_) });
+            }
+            when GraphQL::InputObjectType
+            {
+                $type.inputFields .= map({ self.resolve-type($_) });
+            }
+            when GraphQL::Union
+            {
+                $type.possibleTypes .= map({ self.resolve-type($_) });;
+            }
+            when GraphQL::Non-Null | GraphQL::List
+            {
+                $type.ofType = self.resolve-type($type.ofType);
+            }
+            when GraphQL::Field
+            {
+                $type.type = self.resolve-type($type.type);
+                $type.args .= map({ self.resolve-type($_) });
+            }
+            when GraphQL::InputValue
+            {
+                $type.type = self.resolve-type($type.type);
+            }
+        }
+        return $type;
+    }
+
+    method resolve-schema
+    {
+        die "Must define root query type" unless self.queryType()
+            and self.queryType.kind ~~ 'OBJECT';
+
+        $!mutation //= 'Mutation' if self.type('Mutation');
+
+        self!add-meta-fields;
+
+        for %!types.values -> $type
+        {
+            self.resolve-type($type);
+        }
+    }
+
     method types { %!types.values }
 
     method add-type(*@newtypes)
@@ -104,7 +162,7 @@ class GraphQL::Schema
         {
             when GraphQL::Type { %!types{$_.name} = $_; }
 
-            when GraphQL::InputObjectClass { self.add-inputobject($_) }
+            when GraphQL::InputObject { self.add-inputobject($_) }
 
             when Enumeration { self.add-enum($_) }
 
@@ -126,11 +184,11 @@ class GraphQL::Schema
         for $t.^attributes -> $a
         {
             my $var = $a ~~ /<-[!]>+$/;
-            my $name = $var.Str;
 
-            my $type = self.perl-type($a.type);
-
-            push @fields, GraphQL::Field.new(:$name, :$type);
+            push @fields, GraphQL::Field.new(
+                name => $var.Str,
+                type => self.perl-type($a.type)
+            );
         }
 
         for $t.^methods -> $m
@@ -158,7 +216,7 @@ class GraphQL::Schema
         }
 
         self.add-type(GraphQL::Object.new(name => $t.^name,
-                                          fields => @fields));
+                                          fieldlist => @fields));
     }
 
     method add-inputobject($t)
@@ -175,9 +233,9 @@ class GraphQL::Schema
             push @inputfields, GraphQL::InputValue.new(:$name, :$type);
         }
 
-        self.add-type(GraphQL::InputObject.new(name => $t.^name,
-                                               inputFields => @inputfields,
-                                               class => $t));
+        self.add-type(GraphQL::InputObjectType.new(name => $t.^name,
+                                                   inputFields => @inputfields,
+                                                   class => $t));
     }
 
     method add-enum(Enumeration $t)
@@ -190,18 +248,18 @@ class GraphQL::Schema
                       ));
     }
 
-    method type($typename) returns GraphQL::Type { %!types{$typename} }
+    method type($name) returns GraphQL::Type
+    {
+        %!types{$name} // GraphQL::LazyType.new(:$name);
+    }
 
     method perl-type($type) returns GraphQL::Type
     {
         do given $type
         {
-            when Enumeration
-            {
-                %!types{$_.^name} // die "Unknown Enum $_.^name()"
-            }
+            when Enumeration { self.type($_.^name) }
 
-            when Array
+            when Positional
             {
                 GraphQL::List.new(ofType => self.perl-type($type.of));
             }
@@ -214,15 +272,17 @@ class GraphQL::Schema
 
             default
             {
-                %!types{$_.^name} // die "No defined type for $_.^name()"
+                self.type($_.^name);
             }
         }
     }
 
     method queryType returns GraphQL::Object
     {
-        return unless $!query and %!types{$!query};
-        %!types{$!query}
+        return  ($!query and %!types{$!query}:exists and
+                            %!types{$!query} ~~ GraphQL::Object)
+            ?? %!types{$!query}
+            !! Nil;
     }
 
     method mutationType returns GraphQL::Object
@@ -241,6 +301,8 @@ class GraphQL::Schema
 
     method Str
     {
+        self.resolve-schema;
+
         my $str = '';
 
         for %!types.kv -> $typename, $type
@@ -287,6 +349,8 @@ class GraphQL::Schema
         push @!errors, GraphQL::Error.new(:$message);
     }
 
+    has $!resolved-schema;
+
     # ExecuteRequest() == $schema.execute()
     method execute(Str $query?,
                    GraphQL::Document :document($doc),
@@ -294,6 +358,8 @@ class GraphQL::Schema
                    :%variables,
                    :$initialValue)
     {
+        self.resolve-schema unless $!resolved-schema++;
+
         @!errors = ();
 
         my $ret;
@@ -301,10 +367,6 @@ class GraphQL::Schema
         try
         {
             my $document = $doc // self.document($query);
-
-            die "Missing root query type $!query()"
-                unless self.queryType
-                and self.queryType.kind ~~ 'OBJECT';
 
             my $operation = $document.GetOperation($operationName);
 
@@ -750,17 +812,17 @@ sub ResolveFieldValue(GraphQL::Object :$objectType,
     {
         if $field.resolver ∈ $background-methods
         {
-            return start $field.resolver.package."$fieldName"(
-                |ResolveArgs($field.resolver.signature, |%argumentValues))
+            start $field.resolver.package."$fieldName"(
+                |ResolveArgs($field.resolver.signature,
+                             :$objectValue,
+                             |%argumentValues))
         }
         else
         {
             $field.resolver.package."$fieldName"(
-                |ResolveArgs($field.resolver.signature, |%argumentValues))
+                |ResolveArgs($field.resolver.signature,
+                             :$objectValue,
+                             |%argumentValues))
         }
-    }
-    else
-    {
-        return Nil;
     }
 }

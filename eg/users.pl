@@ -13,9 +13,10 @@ class User
     has Str $.birthday is rw;
     has Bool $.status is rw;
     has State $.state is rw;
+    has User @.friends is rw;
 }
 
-class UserInput is GraphQL::InputObjectClass
+class UserInput is GraphQL::InputObject
 {
     has Str $.name;
     has Str $.birthday;

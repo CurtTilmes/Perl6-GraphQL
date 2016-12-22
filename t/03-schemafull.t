@@ -83,7 +83,7 @@ schema {
 ok my $Entity = GraphQL::Interface.new(
     name => 'Entity',
     description => 'Entity interface',
-    fields => (
+    fieldlist => (
         GraphQL::Field.new(
             name => 'id',
             description => 'id field',
@@ -102,7 +102,7 @@ ok my $Entity = GraphQL::Interface.new(
 ok my $Foo = GraphQL::Interface.new(
     name => 'Foo',
     description => 'Foo interface',
-    fields => (
+    fieldlist => (
         GraphQL::Field.new(
             name => 'is_foo',
             type => $GraphQLBoolean
@@ -113,7 +113,7 @@ ok my $Foo = GraphQL::Interface.new(
 ok my $Goo = GraphQL::Interface.new(
     name => 'Goo',
     description => 'Goo interface',
-    fields => (
+    fieldlist => (
         GraphQL::Field.new(
             name => 'is_goo',
             type => $GraphQLBoolean
@@ -125,7 +125,7 @@ ok my $Bar = GraphQL::Object.new(
     name => 'Bar',
     description => 'Bar object type',
     interfaces => [ $Foo ],
-    fields => (
+    fieldlist => (
         GraphQL::Field.new(
             name => 'is_foo',
             type => $GraphQLBoolean
@@ -141,7 +141,7 @@ ok my $Baz = GraphQL::Object.new(
     name => 'Baz',
     description => 'Baz object type',
     interfaces => [ $Foo, $Goo ],
-    fields => (
+    fieldlist => (
         GraphQL::Field.new(
             name => 'is_foo',
             type => $GraphQLBoolean
@@ -159,7 +159,7 @@ ok my $Baz = GraphQL::Object.new(
 
 ok my $Person = GraphQL::Object.new(
     name => 'Person',
-    fields => (
+    fieldlist => (
         GraphQL::Field.new(
             name => 'name',
             type => $GraphQLString
@@ -169,7 +169,7 @@ ok my $Person = GraphQL::Object.new(
 
 ok my $Pet = GraphQL::Object.new(
     name => 'Pet',
-    fields => (
+    fieldlist => (
         GraphQL::Field.new(
             name => 'name',
             type => $GraphQLString
@@ -192,7 +192,7 @@ ok my $MultipleUnion = GraphQL::Union.new(
 ok my $Friend = GraphQL::Object.new(
     name => 'Friend',
     description => 'A Friend has a person (single), and either a Person or Pet (multiple)',
-    fields => (
+    fieldlist => (
         GraphQL::Field.new(
             name => 'single',
             type => $SingleUnion
@@ -213,7 +213,7 @@ ok my $User = GraphQL::Object.new(
     name => 'User',
     description => 'User is a type of Entity',
     interfaces => [ $Entity ],
-    fields => (
+    fieldlist => (
         GraphQL::Field.new(
             name => 'id',
             type => GraphQL::Non-Null.new(
@@ -249,7 +249,7 @@ ok my $schema = GraphQL::Schema.new(
     GraphQL::Object.new(
         name => 'Root',
         description => 'Root object type',
-        fields => (
+        fieldlist => (
             GraphQL::Field.new(
                 name => 'me',
                 type => $User
@@ -258,7 +258,11 @@ ok my $schema = GraphQL::Schema.new(
     )
 ), 'Make Schema';
 
+$schema.resolve-schema;
+
 ok my $testschema = GraphQL::Schema.new($schemastring), 'Parse schema';
+
+$testschema.resolve-schema;
 
 is-deeply $testschema.type('Entity'), $Entity, 'Compare Interface Entity';
 

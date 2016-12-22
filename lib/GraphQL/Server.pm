@@ -27,6 +27,11 @@ multi sub MAIN(Str:D $query) is export
     say $schema.execute($query).to-json;
 }
 
+multi sub MAIN(Bool:D :$print) is export
+{
+    print $schema;
+}
+
 multi sub MAIN(Str:D :$filename) is export
 {
     say $schema.execute($filename.IO.slurp).to-json;

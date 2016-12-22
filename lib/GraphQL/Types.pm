@@ -3,7 +3,7 @@ use Text::Wrap;
 
 subset ID of Cool is export;
 
-class GraphQL::InputObjectClass {}
+class GraphQL::InputObject {}
 
 class GraphQL::Type
 {
@@ -21,10 +21,16 @@ class GraphQL::Type
         return '' unless $!description;
 
         wrap-text($!description, :width(75 - $indent.chars),
-                  :prefix("$indent# "));
+                  :prefix("$indent# ")) ~ "\n";
     }
 
     method Str { $!name }
+}
+
+# This is a placeholder for types not yet defined.
+# It will get replaced later.
+class GraphQL::LazyType is GraphQL::Type
+{
 }
 
 role Deprecatable
@@ -187,16 +193,16 @@ class GraphQL::Field is GraphQL::Type does Deprecatable
 
 role HasFields
 {
-    has GraphQL::Field @.fields;
+    has GraphQL::Field @.fieldlist;
 
     method field(Str $name)
     {
-        @!fields.first: *.name eq $name;
+        @!fieldlist.first: *.name eq $name;
     }
 
     method fields(Bool :$includeDeprecated)
     {
-	@!fields.grep: {.name !~~ /^__/ and
+	@!fieldlist.grep: {.name !~~ /^__/ and
                             ($includeDeprecated or not .isDeprecated) }
     }
 
@@ -221,9 +227,9 @@ class GraphQL::Interface is GraphQL::Type does HasFields
 class GraphQL::Object is GraphQL::Type does HasFields
 {
     has Str $.kind = 'OBJECT';
-    has GraphQL::Interface @.interfaces is rw;
+    has GraphQL::Type @.interfaces is rw;
 
-    method addfield($field) { push @!fields, $field }
+    method addfield($field) { push @!fieldlist, $field }
     
     method fragment-applies(Str $fragmentType) returns Bool
     {
@@ -255,7 +261,7 @@ class GraphQL::Object is GraphQL::Type does HasFields
 
 }
 
-class GraphQL::InputObject is GraphQL::Type
+class GraphQL::InputObjectType is GraphQL::Type
 {
     has Str $.kind = 'INPUT_OBJECT';
     has GraphQL::InputValue @.inputFields;
@@ -270,7 +276,7 @@ class GraphQL::InputObject is GraphQL::Type
 
     method coerce(%value)
     {
-        return $!class.new(|%value) if $!class ~~ GraphQL::InputObjectClass;
+        return $!class.new(|%value) if $!class ~~ GraphQL::InputObject;
 
         my %c;
         for @!inputFields -> $f
@@ -338,11 +344,6 @@ class GraphQL::Variable
     has GraphQL::Type $.type;
     has $.defaultValue;
 
-    method perl
-    {
-        "\$$!name"
-    }
-
     method Str
     {
         "\$$!name: $!type.name()" ~
@@ -376,6 +377,34 @@ sub directive-str($name, $args)
                    ~ ')' if $args)
 }
 
+sub argvalue($val)
+{
+    given $val
+    {
+        when Hash
+        {
+            '{ ' ~ $val.keys.map({ "$_: " ~ argvalue($val{$_})}) ~ ' }'
+        }
+        when Array
+        {
+            ...
+        }
+        when GraphQL::Variable
+        {
+            "\$$val.name()";
+        }
+        when Bool
+        {
+            $val.defined ?? ($val ?? 'true' !! 'false')
+                         !! 'null'
+        }
+        default
+        {
+            $val.perl
+        }
+    }
+}
+
 class GraphQL::QueryField
 {
     has Str $.alias;
@@ -390,7 +419,7 @@ class GraphQL::QueryField
     {
         $indent ~ ($!alias ~ ': ' if $!alias) ~ $!name
         ~
-            ( '(' ~ %!args.keys.map({$_.Str ~ ': ' ~ %!args{$_}.perl})
+            ( '(' ~ %!args.keys.map({$_.Str ~ ': ' ~ argvalue(%!args{$_})})
                                .join(', ') ~ ')' if %!args)
         ~
             %!directives.kv.map(&directive-str)

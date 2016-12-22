@@ -55,7 +55,7 @@ is-deeply GraphQL::Grammar.parse('interface Entity { id: ID! name: String }',
                                  :$actions, rule => 'Interface').made,
     GraphQL::Interface.new(
         name => 'Entity',
-        fields => (
+        fieldlist => (
             GraphQL::Field.new(
                 name => 'id',
                 type => GraphQL::Non-Null.new(ofType => $GraphQLID),

@@ -6,25 +6,6 @@ unit class GraphQL::Actions;
 # and <TypeSchema> for a GraphQL type schema.
 #
 
-#
-# Only for <TypeSchema>, as fields and lists are defined, keep track
-# of any that refer to types, then after all the types are defined,
-# loop through them, linking to the created types.  This allows, for
-# example, a field of an Object to refer to another Object of the same
-# type.
-#
-has @!fields-to-type;  # These types have a single type
-# 'typename' => GraphQL::Field or GraphQL::InputValue (set $.type)
-#            or GraphQL::Non-Null or GraphQL::List    (set $.ofType)
-
-has @!lists-to-type;   # These take lists of types
-# ('list', 'of', 'typenames') => GraphQL::Object (@.interfaces)
-#                             or GraphQL::Union  (@.possibleTypes)
-
-#
-# Returns this (in .made) when making a <Document>
-#
-
 has GraphQL::Document $!q = GraphQL::Document.new;
 
 has $.schema;
@@ -72,8 +53,6 @@ method VariableDefinitions($/)
 
 method VariableDefinition($/)
 {
-    die "Unknown type $<Type>.made()" unless $<Type>.made ~~ GraphQL::Type;
-
     make GraphQL::Variable.new(
         name => $<Variable>.<Name>.made,
         type => $<Type>.made,
@@ -250,43 +229,25 @@ method Type($/)
 
 method NamedType($/)
 {
-    make $!schema.type($<Name>.Str) // $<Name>.Str;
+    make $!schema.type($<Name>.Str);
 }
 
 method ListType($/)
 {
-    if $<Type>.made ~~ Str
-    {
-        my $l = GraphQL::List.new();
-        push @!fields-to-type, $<Type>.made => $l;
-        make $l;
-    }
-    else
-    {
-        make GraphQL::List.new(ofType => $<Type>.made);
-    }
+    make GraphQL::List.new(ofType => $<Type>.made);
 }
 
 method NonNullType($/)
 {
     my $type = $<NamedType>.made || $<ListType>.made;
 
-    if $type ~~ Str
-    {
-        my $n = GraphQL::Non-Null.new();
-        push @!fields-to-type, $type => $n;
-        make $n;
-    }
-    else
-    {
-        make GraphQL::Non-Null.new(ofType => $type);
-    }
+    make GraphQL::Non-Null.new(ofType => $type);
 }
 
 method Interface($/)
 {
     my $i = GraphQL::Interface.new(name => $<Name>.made,
-                         fields => $<FieldList>.made);
+                         fieldlist => $<FieldList>.made);
 
     $i.add-comment-description($/);
 
@@ -309,18 +270,10 @@ method Field($/)
     my $f = GraphQL::Field.new(
 	name => $<Name>.made,
 	args => $<ArgumentDefinitions>.made // (),
+        type => $<Type>.made
     );
 
     $f.add-comment-description($/);
-
-    if $<Type>.made ~~ Str
-    {
-        push @!fields-to-type, $<Type>.made => $f;
-    }
-    else
-    {
-	$f.type = $<Type>.made;
-    }
 
     if $<Directives>.made<deprecated>:exists
     {
@@ -340,15 +293,10 @@ method Field($/)
 method ObjectType($/)
 {
     my $o = GraphQL::Object.new(name => $<Name>.made,
-                                fields => $<FieldList>.made);
+                                fieldlist => $<FieldList>.made,
+                                interfaces => $<Implements>.made // ());
 
     $o.add-comment-description($/);
-
-    if $<Implements>.made
-    {
-        push @!lists-to-type, 
-             ($<Implements>.made => $o);
-    }
 
     push @!newtypes, $o;
     make $o;
@@ -356,16 +304,15 @@ method ObjectType($/)
 
 method Implements($/)
 {
-    make $<Name>».made;
+    make $<Name>.map({ $!schema.type($_.made) });
 }
 
 method Union($/)
 {
-    my $u = GraphQL::Union.new(name => $<Name>.made);
+    my $u = GraphQL::Union.new(name => $<Name>.made,
+                               possibleTypes => $<UnionList>.made);
 
     $u.add-comment-description($/);
-
-    push @!lists-to-type, ($<UnionList>.made => $u);
 
     push @!newtypes, $u;
     make $u;
@@ -373,7 +320,7 @@ method Union($/)
 
 method UnionList($/)
 {
-    make $<Name>».made; 
+    make $<Name>.map({ $!schema.type($_.made) });
 }
 
 method Enum($/)
@@ -417,7 +364,7 @@ method Directives($/)
     my %directives;
     for $<Directive> -> $directive
     {
-	%directives{$directive<Name>.made} = $directive<Arguments>.made // Nil;
+	%directives{$directive<Name>.made} = $directive<Arguments>.made // ();
     }
     make %directives;
 }
@@ -429,19 +376,9 @@ method DefaultValue($/)
 
 method ArgumentDefinition($/)
 {
-    my $t = GraphQL::InputValue.new(name => $<Name>.made,
-                                    defaultValue => $<DefaultValue>.made);
-
-    if $<Type>.made ~~ Str
-    {
-        push @!fields-to-type, $<Type>.made => $t;
-    }
-    else
-    {
-        $t.type = $<Type>.made;
-    }
-
-    make $t;
+    make GraphQL::InputValue.new(name => $<Name>.made,
+                                 type => $<Type>.made,
+                                 defaultValue => $<DefaultValue>.made);
 }
 
 method ArgumentDefinitions($/)
@@ -461,8 +398,8 @@ method Scalar($/)
 
 method InputObject($/)
 {
-    my $o = GraphQL::InputObject.new(name => $<Name>.made,
-        inputFields => $<InputFieldList>.made);
+    my $o = GraphQL::InputObjectType.new(name => $<Name>.made,
+                                         inputFields => $<InputFieldList>.made);
 
     $o.add-comment-description($/);
 
@@ -478,75 +415,17 @@ method InputFieldList($/)
 method InputField($/)
 {
     my $f = GraphQL::InputValue.new(name => $<Name>.made,
+                                    type => $<Type>.made,
                                     defaultValue => $<DefaultValue>.made);
 
     $f.add-comment-description($/);
-
-    if $<Type>.made ~~ Str
-    {
-        push @!fields-to-type, $<Type>.made => $f;
-    }
-    else
-    {
-	$f.type = $<Type>.made;
-    }
 
     make $f;
 }
 
 method TypeSchema($/)
 {
-    # Add all the newly defined types to the schema
-    $!schema.add-type(|@!newtypes);
-
-    #
-    # Go through all the saved @fields-to-type and @lists-to-type, look
-    # them up in the schema type list, and patch them to the right type
-    # now that they are all defined
-    #
-    for @!fields-to-type -> $field
-    {
-        die "Haven't defined $field.key()" unless $!schema.type($field.key);
-
-        given $field.value
-        {
-            when GraphQL::Field | GraphQL::InputValue
-            {
-                $field.value.type = $!schema.type($field.key);
-            }
-
-            when GraphQL::Non-Null | GraphQL::List
-            {
-                $field.value.ofType = $!schema.type($field.key);
-            }
-
-            default { die "Need to type $field.value.WHAT()" }
-        }
-    }
-
-    for @!lists-to-type -> $typelist
-    {
-        my @list-of-types;
-        for $typelist.key -> $name
-        {
-            die "Haven't defined interface $name" unless $!schema.type($name);
-            push @list-of-types, $!schema.type($name);
-        }
-        
-        given $typelist.value
-        {
-            when GraphQL::Object
-            { 
-                $typelist.value.interfaces = @list-of-types
-            }
-            when GraphQL::Union
-            {
-                $typelist.value.possibleTypes = @list-of-types;
-            }
-
-            default { die "Need to type $typelist.value.WHAT()" }
-        }
-    }
+    $!schema.add-type(@!newtypes);
 
     make $!schema;
 }
