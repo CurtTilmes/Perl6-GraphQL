@@ -3,17 +3,51 @@
 use GraphQL;
 use GraphQL::Types;
 use GraphQL::Server;
+use Cache::LRU;
+
+my $usercache = Cache::LRU.new;   # Key = User.id, Value = User
 
 enum State <NOT_FOUND ACTIVE INACTIVE SUSPENDED>;
 
+class Query { ... }
+class Mutation { ...}
+
 class User
 {
+    trusts Mutation;
+
     has ID $.id is rw;
     has Str $.name is rw;
     has Str $.birthday is rw;
     has Bool $.status is rw;
     has State $.state is rw;
-    has User @.friends is rw;
+    has Set $!friend-set = ∅;
+
+    method friends(--> Array[User]) is graphql-background
+    {
+        Array[User].new(await $!friend-set.keys.map({
+                                  start Query.user(:id($_))
+                              }));
+    }
+
+    method random_friend(--> User) is graphql-background
+    {
+        Query.user(:id($!friend-set.pick));
+    }
+
+    method !friend_add(ID :$friend_id --> Bool)
+    {
+        $!friend-set ∪= $friend_id;
+        $usercache.remove($!id);
+        return True;
+    }
+
+    method !friend_remove(ID :$friend_id --> Bool)
+    {
+        $!friend-set -= $friend_id;
+        $usercache.remove($!id);
+        return True;
+    }
 }
 
 class UserInput is GraphQL::InputObject
@@ -56,11 +90,22 @@ class Query
     method user(ID :$id --> User)
         is graphql-background
     {
+        return unless @users[$id];
+
+        if $usercache.get($id) -> $user
+        {
+            return $user;
+        }
+
+        say "Sleeping for $id";
         sleep 2;
-        @users[$id]
+
+        my $user = @users[$id];
+
+        $usercache.set($id, $user);
     }
 
-    method listusers(Int :$start, Int :$count --> Array[User])
+    method listusers(ID :$start, Int :$count --> Array[User])
         is graphql-background
     {
         Array[User].new(
@@ -90,7 +135,18 @@ class Mutation
                 @users[$id]."$field"() = $userinput."$field"();
             }
         }
+        $usercache.remove($id);
         return Query.user(:$id);
+    }
+
+    method friend_add(ID :$id, ID :$friend_id --> Bool)
+    {
+        @users[$id]!User::friend_add(:$friend_id);
+    }
+
+    method friend_remove(ID :$id, ID :$friend_id --> Bool)
+    {
+        @users[$id]!User::friend_remove(:$friend_id);
     }
 }
 
