@@ -48,7 +48,7 @@ class User
     #| random_friend picks a single friend from among this user's friends.
     method random_friend(--> User) is graphql-background
     {
-        Query.user(:id($!friend-set.pick));
+        Query.user(:id($!friend-set.pick // return Nil));
     }
 
     method !friend_add(ID :$friend_id --> Bool)
