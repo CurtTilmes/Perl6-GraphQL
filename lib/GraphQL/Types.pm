@@ -306,7 +306,7 @@ class GraphQL::EnumValue is GraphQL::Scalar does Deprecatable
     { self.description-comment ~ "$indent$.name" ~ self.deprecate-str }
 }
 
-class GraphQL::Enum is GraphQL::Scalar
+class GraphQL::Enum is GraphQL::Type
 {
     has Str $.kind = 'ENUM';
     has GraphQL::Type @.enumValues;
@@ -328,6 +328,11 @@ class GraphQL::Enum is GraphQL::Scalar
         "enum $.name \{\n" ~
             @!enumValues.map({ $_.Str('  ')}).join("\n") ~
         "\n}\n";
+    }
+
+    method to-json($name, $value, $indent)
+    {
+        qq<$indent"$name": > ~ ($value.defined ?? qq<"$value"> !! 'null')
     }
 }
 
