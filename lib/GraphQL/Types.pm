@@ -26,11 +26,9 @@ class GraphQL::Type
     method Str { $!name }
 }
 
-# This is a placeholder for types not yet defined.
-# It will get replaced later.
+# This is a placeholder for types not yet defined that will get replaced later.
 class GraphQL::LazyType is GraphQL::Type
-{
-}
+{}
 
 role Deprecatable
 {
@@ -52,7 +50,7 @@ role Deprecatable
 
 class GraphQL::Scalar is GraphQL::Type
 {
-    has Str $.kind = 'SCALAR';
+    method kind(--> Str) { 'SCALAR' };
 
     method Str { self.description-comment ~ "scalar $.name\n" }
 
@@ -123,9 +121,10 @@ our $GraphQLID      is export = GraphQL::ID.new;
 
 class GraphQL::List is GraphQL::Type
 {
-    has Str $.kind = 'LIST';
     has GraphQL::Type $.ofType is rw;
     
+    method kind(--> Str) { 'LIST' };
+
     method name { '[' ~ $.ofType.name ~ ']' }
 
     method to-json($name, $value, $indent)
@@ -144,8 +143,9 @@ class GraphQL::List is GraphQL::Type
 
 class GraphQL::Non-Null is GraphQL::Type
 {
-    has Str $.kind = 'NON_NULL';
     has GraphQL::Type $.ofType is rw;
+
+    method kind(--> Str) { 'NON_NULL' };
 
     method name { $!ofType.name ~ '!' }
 
@@ -213,8 +213,9 @@ role HasFields
 
 class GraphQL::Interface is GraphQL::Type does HasFields
 {
-    has Str $.kind = 'INTERFACE';
     has GraphQL::Type @.possibleTypes;
+
+    method kind(--> Str) { 'INTERFACE' }
 
     method Str
     {
@@ -225,8 +226,9 @@ class GraphQL::Interface is GraphQL::Type does HasFields
 
 class GraphQL::Object is GraphQL::Type does HasFields
 {
-    has Str $.kind = 'OBJECT';
     has GraphQL::Type @.interfaces is rw;
+
+    method kind(--> Str) { 'OBJECT' };
 
     method addfield($field) { push @!fieldlist, $field }
     
@@ -262,9 +264,10 @@ class GraphQL::Object is GraphQL::Type does HasFields
 
 class GraphQL::InputObjectType is GraphQL::Type
 {
-    has Str $.kind = 'INPUT_OBJECT';
     has GraphQL::InputValue @.inputFields;
     has $.class;
+
+    method kind(--> Str) { 'INPUT_OBJECT' }
 
     method Str
     {
@@ -289,8 +292,9 @@ class GraphQL::InputObjectType is GraphQL::Type
 
 class GraphQL::Union is GraphQL::Type
 {
-    has $.kind = 'UNION';
     has GraphQL::Type @.possibleTypes;
+
+    method kind(--> Str) { 'UNION' }
 
     method Str
     {
@@ -308,8 +312,9 @@ class GraphQL::EnumValue is GraphQL::Scalar does Deprecatable
 
 class GraphQL::Enum is GraphQL::Type
 {
-    has Str $.kind = 'ENUM';
-    has GraphQL::Type @.enumValues;
+    has GraphQL::EnumValue @.enumValues;
+
+    method kind(--> Str) { 'UNION' }
 
     method enumValues(Bool :$includeDeprecated)
     {
