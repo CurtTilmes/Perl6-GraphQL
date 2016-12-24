@@ -987,7 +987,7 @@ L<https://github.com/sogko/graphql-shorthand-notation-cheat-sheet/>.
 For the "Hello World" example, it would look like this:
 
 =begin code
-my $schema = GraphQL::Schema.new('type Query { hello: String}',
+my $schema = GraphQL::Schema.new('type Query { hello: String }',
     resolvers => { Query => { hello => sub { 'Hello World' } } });
 =end code
 
@@ -1017,7 +1017,7 @@ my $schema = GraphQL::Schema.new(Query);
 =end code
 
 Under the hood, the Schemas all look the same, regardless of which
-I<style> you use to construct them.  The later two options are just
+style you use to construct them.  The later two options are just
 additional syntactic sugar to make things easier.  You can also mix
 and match, making some types one way and some another and everything
 will still work fine.
@@ -1107,15 +1107,20 @@ B<.kind()> = 'SCALAR';
 There are several core GraphQL scalar types that map to Perl basic
 scalar types:
 
-=table
+=begin table
 GraphQL Type | Perl Type Class  | Perl Object Instance | Perl Type
 ===========================================================================
 String       | GraphQL::String  | $GraphQLString       | Str
+
 Int          | GraphQL::Int     | $GraphQLInt          | Int
+
 Float        | GraphQL::Float   | $GraphQLFloat        | Num
+
 Boolean      | GraphQL::Boolean | $GraphQLBoolean      | Bool
+
 ID           | GraphQL::ID      | $GraphQLID           | ID (subset of Cool)
 ----------------------------------------------------------------------------
+=end table
 
 The Perl Object Instances are just short hand pre-created objects that
 can be used since those types are needed so frequently.
