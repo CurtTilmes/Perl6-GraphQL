@@ -102,7 +102,7 @@ rule FragmentDefinition
     'fragment' <FragmentName> <TypeCondition> <Directives>? <SelectionSet>
 }
 
-rule FragmentName { <Name><!after 'on'> }
+rule FragmentName { <Name><!after ' on'> }
 
 rule TypeCondition { 'on' <NamedType> }
 

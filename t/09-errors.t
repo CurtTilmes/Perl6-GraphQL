@@ -13,7 +13,7 @@ ok my $ret = $schema.execute('{badfield}'), 'Bad Field Query';
 is $ret.to-json, Q<{
   "errors": [
     {
-      "message": "Cannot query field 'badfield' on type 'Query'."
+      "message": "Field badfield not defined"
     }
   ]
 }>, 'Bad Field Error';

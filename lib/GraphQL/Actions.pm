@@ -79,7 +79,6 @@ method QueryField($/)
         directives => $<Directives>.made // (),
         selectionset => $<SelectionSet>.made // ()
     );
-
 }
 
 method Alias($/)
@@ -118,7 +117,7 @@ method FragmentDefinition($/)
 {
     $!q.fragments{$<FragmentName>.made} = GraphQL::Fragment.new(
         name         => $<FragmentName>.made,
-        onType       => $<TypeCondition>.made.name,
+        onType       => $<TypeCondition>.made,
         directives   => $<Directives>.made // (),
         selectionset => $<SelectionSet>.made
     );
@@ -304,7 +303,7 @@ method ObjectType($/)
 
 method Implements($/)
 {
-    make $<Name>.map({ $!schema.type($_.made) });
+    make $<Name>.map({ $!schema.type(.made) });
 }
 
 method Union($/)
@@ -320,7 +319,7 @@ method Union($/)
 
 method UnionList($/)
 {
-    make $<Name>.map({ $!schema.type($_.made) });
+    make $<Name>.map({ $!schema.type(.made) });
 }
 
 method Enum($/)
