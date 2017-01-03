@@ -8,6 +8,8 @@ use GraphQL::Response;
 use GraphQL::Execution;
 use GraphQL::Validation;
 
+multi sub trait_mod:<is>(Method $m, :$graphql-background!) is export { ... }
+
 my Set $defaultTypes = set $GraphQLInt, $GraphQLFloat, $GraphQLString,
                            $GraphQLBoolean, $GraphQLID;
 
@@ -124,7 +126,7 @@ class GraphQL::Schema
                     }
                 }
             }
-            when GraphQL::InputObjectType
+            when GraphQL::Input
             {
                 $type.inputFields .= map({ self.resolve-type($_) });
             }
@@ -283,10 +285,10 @@ class GraphQL::Schema
 
         my $description = $t.WHY ?? ~$t.WHY !! Str;
 
-        self.add-type(GraphQL::InputObjectType.new(name => $t.^name,
-                                                   inputFields => @inputfields,
-                                                   class => $t,
-                                                   :$description));
+        self.add-type(GraphQL::Input.new(name => $t.^name,
+                                         inputFields => @inputfields,
+                                         class => $t,
+                                         :$description));
     }
 
     method add-enum(Enumeration $t)
@@ -638,7 +640,7 @@ The Perl Class hierarchy for GraphQL Types includes these:
 =item2 B<GraphQL::Field>
 =item2 B<GraphQL::Interface>
 =item2 B<GraphQL::Object>
-=item2 B<GraphQL::InputObjectType>
+=item2 B<GraphQL::Input>
 =item2 B<GraphQL::Union>
 =item2 B<GraphQL::Enum>
 =item2 B<GraphQL::Directive>
@@ -842,7 +844,7 @@ with an exclamation point. e.g.
 
 The type is used to represent arguments for B<GraphQL::Field>s and
 B<Directive>s arguments as well as the C<inputFields> of a
-B<GraphQL::InputObjectType>. Has a C<$.type> attribute and optionally
+B<GraphQL::Input>. Has a C<$.type> attribute and optionally
 a C<$.defaultValue> attribute.
 
  my $inputvalue = GraphQL::InputValue.new(name => 'somearg',
@@ -939,14 +941,14 @@ In Perl:
 
 NOTE: Interfaces aren't yet implemented for the perl classes.
 
-=head4 B<GraphQL::InputObjectType> is B<GraphQL::Type>
+=head4 B<GraphQL::Input> is B<GraphQL::Type>
 
 Input Objects are object like types used as inputs to queries.  Their
 B<.kind()> method returns 'INPUT_OBJECT'.  They have a
 B<@.inputFields> array of B<GraphQL::InputValue>s, very similar to the
 fields defined within a normal Object.
 
- my $obj = GraphQL::InputObjectType.new(
+ my $obj = GraphQL::Input.new(
     name => 'myinputobject',
     inputFields => (GraphQL::InputValue.new(...), GraphQL::InputValue.new(...)
  );

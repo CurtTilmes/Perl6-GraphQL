@@ -397,8 +397,8 @@ method Scalar($/)
 
 method InputObject($/)
 {
-    my $o = GraphQL::InputObjectType.new(name => $<Name>.made,
-                                         inputFields => $<InputFieldList>.made);
+    my $o = GraphQL::Input.new(name => $<Name>.made,
+                               inputFields => $<InputFieldList>.made);
 
     $o.add-comment-description($/);
 

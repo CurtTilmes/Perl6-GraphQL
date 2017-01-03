@@ -284,7 +284,7 @@ class GraphQL::Object is GraphQL::Type does HasFields
     }
 }
 
-class GraphQL::InputObjectType is GraphQL::Type
+class GraphQL::Input is GraphQL::Type
 {
     has GraphQL::InputValue @.inputFields;
     has $.class;
