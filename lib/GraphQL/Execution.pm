@@ -233,6 +233,34 @@ sub CoerceVariableValues(GraphQL::Operation :$operation,
     return %coercedValues;
 }
 
+sub ReplaceVariable(:$value, :%variables)
+{
+    given $value
+    {
+        when GraphQL::Variable
+        {
+            return %variables{$value.name}:exists
+                ?? %variables{$value.name}
+                !! Nil;
+        }
+        when Hash
+        {
+            for $value.kv -> $k, $v
+            {
+                $value{$k} = ReplaceVariable(value => $v, :%variables);
+            }
+        }
+        when List
+        {
+            for $value.kv -> $k, $v
+            {
+                $value[$k] = ReplaceVariable(value => $v, :%variables);
+            }
+        }
+    }
+    return $value;
+}
+
 sub CoerceArgumentValues(GraphQL::Object :$objectType,
                          GraphQL::QueryField :$field,
                          :%variables)
@@ -243,10 +271,7 @@ sub CoerceArgumentValues(GraphQL::Object :$objectType,
     {
         my $value = $field.args{$arg.name};
 
-        if $value ~~ GraphQL::Variable and %variables{$value.name}:exists
-        {
-            $value = %variables{$value.name};
-        }
+        $value = ReplaceVariable(:$value, :%variables);
 
         $value //= $arg.defaultValue // die "Must provide $arg.name()";
 

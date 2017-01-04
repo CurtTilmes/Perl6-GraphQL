@@ -300,21 +300,21 @@ class GraphQL::Input is GraphQL::Type
 
     method coerce(%value)
     {
-        return $!class.new(|%value) if $!class ~~ GraphQL::InputObject;
-
         my %c;
         for @!inputFields -> $f
         {
             %c{$f.name} = $f.type.coerce(%value{$f.name})
                 if %value{$f.name}:exists;
         }
-        return %c;
+
+        return $!class ~~ GraphQL::InputObject
+            ?? $!class.new(|%c)
+            !! %c;
     }
 }
 
 class GraphQL::EnumValue is GraphQL::Scalar does Deprecatable
 {
-    
     method Str(Str $indent = '')
     { self.description-comment ~ "$indent$.name" ~ self.deprecate-str }
 }
@@ -322,8 +322,9 @@ class GraphQL::EnumValue is GraphQL::Scalar does Deprecatable
 class GraphQL::Enum is GraphQL::Type
 {
     has GraphQL::EnumValue @.enumValues;
+    has $.enum;
 
-    method kind(--> Str) { 'UNION' }
+    method kind(--> Str) { 'ENUM' }
 
     method enumValues(Bool :$includeDeprecated)
     {
@@ -334,6 +335,15 @@ class GraphQL::Enum is GraphQL::Type
     {
         return Nil unless $value.defined;
         so @.enumValues.first({ .name eq $value });
+    }
+
+    method coerce($value)
+    {
+        my \t := $.enum;
+
+        $.enum ~~ Enumeration
+            ?? t::{$value}
+            !! (@.enumValues.first: {.name eq $value}).name
     }
 
     method Str

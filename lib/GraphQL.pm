@@ -38,6 +38,7 @@ class GraphQL::Schema
             or die "Failed to parse Introspection Schema";
 
         $schema.add-type(@types);
+
         $schema.query        = $query        if $query;
         $schema.mutation     = $mutation     if $mutation;
         $schema.subscription = $subscription if $subscription;
@@ -154,10 +155,10 @@ class GraphQL::Schema
     method resolve-schema
     {
         die "Must define root query type" unless self.queryType()
-            and self.queryType.kind ~~ 'OBJECT';
+            and self.queryType ~~ GraphQL::Object;
 
         if not $!mutation.defined and self.type('Mutation')
-            and self.type('Mutation') ~~ 'OBJECT'
+            and self.type('Mutation') ~~ GraphQL::Object
         {
             $!mutation = 'Mutation';
         }
@@ -297,6 +298,7 @@ class GraphQL::Schema
 
         self.add-type(GraphQL::Enum.new(
                           name => $t.^name,
+                          enum => $t,
                           :$description,
                           enumValues => $t.enums.map({
                               GraphQL::EnumValue.new(name => .key)
@@ -351,8 +353,9 @@ class GraphQL::Schema
 
     method mutationType returns GraphQL::Object
     {
-        return unless $!mutation and %!types{$!mutation};
-        %!types{$!mutation}
+        return ($!mutation and %!types{$!mutation})
+            ?? %!types{$!mutation}
+            !! Nil;
     }
 
     method subscriptionType returns GraphQL::Object

@@ -206,6 +206,11 @@ method Value:sym<NullValue>($/)
     make Nil
 }
 
+method Value:sym<EnumValue>($/)
+{
+    make $<Name>.made;
+}
+
 method ObjectValue($/)
 {
     make %( $<ObjectField>».made );
