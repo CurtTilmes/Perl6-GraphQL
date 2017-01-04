@@ -443,12 +443,6 @@ sub ResolveFieldValue(GraphQL::Object :$objectType,
                                       :$objectValue,
                                       |%argumentValues));
     }
-    elsif $objectValue.^lookup($fieldName) -> $method
-    {
-        $objectValue."$fieldName"(|ResolveArgs($method.signature,
-                                               :$objectValue,
-                                               |%argumentValues))
-    }
     elsif $field.resolver ~~ Method
     {
         if $field.resolver ∈ $background-methods
@@ -465,5 +459,15 @@ sub ResolveFieldValue(GraphQL::Object :$objectType,
                              :$objectValue,
                              |%argumentValues))
         }
+    }
+    elsif $objectValue ~~ Hash and $objectValue{$fieldName}:exists
+    {
+        $objectValue{$fieldName};
+    }
+    elsif $objectValue.^lookup($fieldName) -> $method
+    {
+        $objectValue."$fieldName"(|ResolveArgs($method.signature,
+                                               :$objectValue,
+                                               |%argumentValues))
     }
 }
