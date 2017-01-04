@@ -159,4 +159,23 @@ fragment directFieldSelectionOnUnion on CatOrDog {
   barkVolume
 }') }, 'direct field selection on union';
 
+ok $schema.document('
+fragment mergeIdenticalFields on Dog {
+  name
+  name
+}'), 'Merge Identical Fields';
+
+ok $schema.document('
+fragment mergeIdenticalAliasesAndFields on Dog {
+  otherName: name
+  otherName: name
+}'), 'Merge Identical Aliases and Fields';
+
+nok $schema.document('
+fragment conflictingBecauseAlias on Dog {
+  name: nickname
+  name
+}'), 'Conflicting because alias';
+
+
 done-testing;

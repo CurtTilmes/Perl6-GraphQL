@@ -37,10 +37,10 @@ sub ExecuteRequest(:$document,
 }
 
 sub ExecuteSelectionSet(:@selectionSet,
-                           GraphQL::Object :$objectType,
-                           :$objectValue! is rw,
-                           :%variables,
-                           GraphQL::Document :$document)
+                        GraphQL::Object :$objectType,
+                        :$objectValue! is rw,
+                        :%variables,
+                        GraphQL::Document :$document)
 {
     my @groupedFieldSet = CollectFields(:$objectType,
                                         :@selectionSet,
@@ -57,42 +57,35 @@ sub ExecuteSelectionSet(:@selectionSet,
 
         my $responseValue;
 
-        my $fieldType;
-
-#        if ($fieldName eq '__typename')
-#        {
-#            $responseValue = $objectType.name;
-#            $fieldType = $GraphQLString;
-#        }
-#        else
-#        {
-            $fieldType = $objectType.field($fieldName).type
-                or die qq{Cannot query field '$fieldName' } ~
-                       qq{on type '$objectType.name()'.};
+        my $fieldType = $objectType.field($fieldName).type
+            or die qq{Cannot query field '$fieldName' } ~
+                qq{on type '$objectType.name()'.};
             
-            $responseValue = ExecuteField(:$objectType, 
-                                          :$objectValue,
-                                          :@fields,
-                                          :$fieldType,
-                                          :%variables,
-                                          :$document);
-#        }
+        $responseValue = ExecuteField(:$objectType,
+                                      :$objectValue,
+                                      :@fields,
+                                      :$fieldType,
+                                      :%variables,
+                                      :$document);
 
-        push @results, GraphQL::Response.new(
-            name => $responseKey,
-            type => $fieldType,
-            value => $responseValue);
+        my $type = $fieldType ~~ GraphQL::Interface | GraphQL::Union
+            ?? GraphQL::Object
+            !! $fieldType;
+
+        push @results, GraphQL::Response.new(:$type,
+                                             name => $responseKey,
+                                             value => $responseValue);
     }
 
     return @results;
 }
 
 sub ExecuteField(GraphQL::Object :$objectType,
-                    :$objectValue! is rw,
-                    :@fields,
-                    GraphQL::Type :$fieldType,
-                    :%variables,
-                    :$document)
+                 :$objectValue! is rw,
+                 :@fields,
+                 GraphQL::Type :$fieldType,
+                 :%variables,
+                 :$document)
 {
     my $field = @fields[0];
 
@@ -129,10 +122,10 @@ sub ExecuteField(GraphQL::Object :$objectType,
 }
 
 sub CompleteValue(GraphQL::Type :$fieldType,
-                     :@fields,
-                     :$result,
-                     :%variables,
-                     :$document)
+                  :@fields,
+                  :$result,
+                  :%variables,
+                  :$document)
 {
     given $fieldType
     {
@@ -176,7 +169,7 @@ sub CompleteValue(GraphQL::Type :$fieldType,
         
         when GraphQL::Object | GraphQL::Interface | GraphQL::Union
         {
-            my $objectType = * ~~ GraphQL::Object 
+            my $objectType = $fieldType ~~ GraphQL::Object
                 ?? $fieldType
                 !! ResolveAbstractType(:$fieldType, :$result);
             
@@ -199,9 +192,9 @@ sub CompleteValue(GraphQL::Type :$fieldType,
     }
 }
 
-sub ResolveAbstractType(:$fieldType, :$results)
+sub ResolveAbstractType(:$fieldType, :$result)
 {
-    die "ResolveAbstractType";
+    $fieldType.possibleTypes.first: { .name eq $result.WHAT.^name }
 }
 
 sub MergeSelectionSets(:@fields)

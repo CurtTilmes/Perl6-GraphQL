@@ -137,7 +137,7 @@ class GraphQL::List is GraphQL::Type
 
     method coerce($value)
     {
-        say "coercing a list!";
+        die "coercing a list!";
     }
 }
 
@@ -233,7 +233,7 @@ class GraphQL::Union is GraphQL::Type
     method Str
     {
         self.description-comment ~
-        "union $.name = {(@!possibleTypes».name).join(' | ')}\n";
+        "union $.name = { (@!possibleTypes».name).join(' | ') }\n";
     }
 }
 

@@ -26,7 +26,7 @@ sub validate-operation(:$document, :$schema, :$operation)
 
     my @selectionset = $operation.selectionset;
 
-    validate-selectionset(:$document, :$schema, :$type, :@selectionset)
+    validate-selectionset(:$document, :$schema, :$type, :@selectionset);
 }
 
 sub validate-selectionset(:$document, :$schema, :$type, :@selectionset)
