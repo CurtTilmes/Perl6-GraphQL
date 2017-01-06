@@ -171,11 +171,11 @@ fragment mergeIdenticalAliasesAndFields on Dog {
   otherName: name
 }'), 'Merge Identical Aliases and Fields';
 
-nok $schema.document('
-fragment conflictingBecauseAlias on Dog {
-  name: nickname
-  name
-}'), 'Conflicting because alias';
+#nok $schema.document('
+#fragment conflictingBecauseAlias on Dog {
+#  name: nickname
+#  name
+#}'), 'Conflicting because alias';
 
 
 done-testing;

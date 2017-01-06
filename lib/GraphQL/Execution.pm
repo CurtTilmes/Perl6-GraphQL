@@ -430,27 +430,40 @@ sub ResolveFieldValue(GraphQL::Object :$objectType,
 {
     my $field = $objectType.field($fieldName) or return;
 
-    if $field.resolver ~~ Sub
+    if $field.resolver
     {
-        $field.resolver.(|ResolveArgs($field.resolver.signature,
-                                      :$objectValue,
-                                      |%argumentValues));
-    }
-    elsif $field.resolver ~~ Method
-    {
-        if $field.resolver ∈ $background-methods
+        my $args = ResolveArgs($field.resolver.signature,
+                               :$objectValue,
+                               |%argumentValues);
+
+        if $field.resolver ~~ Sub
         {
-            start $field.resolver.package."$fieldName"(
-                |ResolveArgs($field.resolver.signature,
-                             :$objectValue,
-                             |%argumentValues))
+            $field.resolver.(|$args);
         }
-        else
+        elsif $field.resolver ~~ Method
         {
-            $field.resolver.package."$fieldName"(
-                |ResolveArgs($field.resolver.signature,
-                             :$objectValue,
-                             |%argumentValues))
+            if ($objectValue)
+            {
+                if $field.resolver ∈ $background-methods
+                {
+                    start $objectValue."$fieldName"(|$args)
+                }
+                else
+                {
+                    $objectValue."$fieldName"(|$args)
+                }
+            }
+            else
+            {
+                if $field.resolver ∈ $background-methods
+                {
+                    start $field.resolver.package."$fieldName"(|$args)
+                }
+                else
+                {
+                    $field.resolver.package."$fieldName"(|$args)
+                }
+            }
         }
     }
     elsif $objectValue ~~ Hash and $objectValue{$fieldName}:exists
