@@ -77,7 +77,6 @@ Q<<{
 'Fragment',
 Q<<
 query {
-
     name
     id
     ... morestuff
@@ -101,7 +100,6 @@ Q<<{
 'inline Fragment',
 Q<<
 query foo {
-
     name
     id
     ... {

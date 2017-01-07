@@ -137,7 +137,7 @@ class GraphQL::List is GraphQL::Type
 
     method coerce($value)
     {
-        say "coercing a list!";
+        die "coercing a list!";
     }
 }
 
@@ -224,6 +224,19 @@ class GraphQL::Interface is GraphQL::Type does HasFields
     }
 }
 
+class GraphQL::Union is GraphQL::Type
+{
+    has GraphQL::Type @.possibleTypes;
+
+    method kind(--> Str) { 'UNION' }
+
+    method Str
+    {
+        self.description-comment ~
+        "union $.name = { (@!possibleTypes».name).join(' | ') }\n";
+    }
+}
+
 class GraphQL::Object is GraphQL::Type does HasFields
 {
     has GraphQL::Type @.interfaces is rw;
@@ -232,10 +245,20 @@ class GraphQL::Object is GraphQL::Type does HasFields
 
     method addfield($field) { push @!fieldlist, $field }
     
-    method fragment-applies(Str $fragmentType) returns Bool
+    method fragment-applies(GraphQL::Type $fragmentType --> Bool)
     {
-        return True if $fragmentType eq $.name;
-        die "Check FragmentType in interfaces"; # need to add more checks
+        given $fragmentType
+        {
+            when GraphQL::Object
+            {
+                $fragmentType === self;
+            }
+
+            when GraphQL::Interface | GraphQL::Union
+            {
+                .possibleTypes.first(self).defined
+            }
+        }
     }
 
     method Str
@@ -259,10 +282,9 @@ class GraphQL::Object is GraphQL::Type does HasFields
 
         !! 'null')
     }
-
 }
 
-class GraphQL::InputObjectType is GraphQL::Type
+class GraphQL::Input is GraphQL::Type
 {
     has GraphQL::InputValue @.inputFields;
     has $.class;
@@ -278,34 +300,21 @@ class GraphQL::InputObjectType is GraphQL::Type
 
     method coerce(%value)
     {
-        return $!class.new(|%value) if $!class ~~ GraphQL::InputObject;
-
         my %c;
         for @!inputFields -> $f
         {
             %c{$f.name} = $f.type.coerce(%value{$f.name})
                 if %value{$f.name}:exists;
         }
-        return %c;
-    }
-}
 
-class GraphQL::Union is GraphQL::Type
-{
-    has GraphQL::Type @.possibleTypes;
-
-    method kind(--> Str) { 'UNION' }
-
-    method Str
-    {
-        self.description-comment ~
-        "union $.name = {(@!possibleTypes».name).join(' | ')}\n";
+        return $!class ~~ GraphQL::InputObject
+            ?? $!class.new(|%c)
+            !! %c;
     }
 }
 
 class GraphQL::EnumValue is GraphQL::Scalar does Deprecatable
 {
-    
     method Str(Str $indent = '')
     { self.description-comment ~ "$indent$.name" ~ self.deprecate-str }
 }
@@ -313,8 +322,9 @@ class GraphQL::EnumValue is GraphQL::Scalar does Deprecatable
 class GraphQL::Enum is GraphQL::Type
 {
     has GraphQL::EnumValue @.enumValues;
+    has $.enum;
 
-    method kind(--> Str) { 'UNION' }
+    method kind(--> Str) { 'ENUM' }
 
     method enumValues(Bool :$includeDeprecated)
     {
@@ -325,6 +335,15 @@ class GraphQL::Enum is GraphQL::Type
     {
         return Nil unless $value.defined;
         so @.enumValues.first({ .name eq $value });
+    }
+
+    method coerce($value)
+    {
+        my \t := $.enum;
+
+        $.enum ~~ Enumeration
+            ?? t::{$value}
+            !! (@.enumValues.first: {.name eq $value}).name
     }
 
     method Str
@@ -442,15 +461,30 @@ class GraphQL::QueryField
 class GraphQL::Fragment
 {
     has Str $.name;
-    has Str $.onType;
+    has GraphQL::Type $.onType;
     has %.directives;
     has @.selectionset;
 
     method Str($indent = '')
     {
-        "fragment $.name on $.onType" ~
+        "fragment $.name on $.onType.name()" ~
             ( " \{\n" ~ @!selectionset.map({.Str($indent ~ '  ')}).join('') ~
-              $indent ~ '}' if @!selectionset)
+        $indent ~ '}' if @!selectionset)
+    }
+}
+
+class GraphQL::InlineFragment
+{
+    has GraphQL::Type $.onType;
+    has %.directives;
+    has @.selectionset;
+
+    method Str($indent = '')
+    {
+        "$indent..."
+            ~ (" on $.onType" if $.onType)
+            ~ " \{\n" ~ @!selectionset.map({.Str($indent ~ '  ')}).join('')
+            ~ $indent ~ "}\n"
     }
 }
 
@@ -462,21 +496,6 @@ class GraphQL::FragmentSpread
     method Str($indent = '')
     {
         "$indent... $.name\n"
-    }
-}
-
-class GraphQL::InlineFragment
-{
-    has Str $.onType;
-    has %.directives;
-    has @.selectionset;
-
-    method Str($indent = '')
-    {
-        "$indent..."
-            ~ (" on $.onType" if $.onType)
-            ~ " \{\n" ~ @!selectionset.map({.Str($indent ~ '  ')}).join('')
-            ~ $indent ~ "}\n"
     }
 }
 
@@ -507,4 +526,3 @@ class GraphQL::Document
         ~ "\n";
     }
 }
-

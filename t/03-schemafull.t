@@ -1,10 +1,10 @@
 use v6;
 
 use Test;
-use lib 'lib';
 
 use GraphQL;
 use GraphQL::Types;
+use GraphQL::Compare;
 
 my $schemastring = 
 Q<<

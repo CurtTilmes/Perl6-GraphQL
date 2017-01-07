@@ -19,7 +19,7 @@ class User
     trusts Mutation;
 
     #| id field is unique identifier for each user.
-    has ID $.id is rw;
+    has ID $.id;
 
     #| name field is the name of the user
     has Str:D $.name is rw is required;

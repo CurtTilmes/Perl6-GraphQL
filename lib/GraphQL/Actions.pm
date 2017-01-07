@@ -79,7 +79,6 @@ method QueryField($/)
         directives => $<Directives>.made // (),
         selectionset => $<SelectionSet>.made // ()
     );
-
 }
 
 method Alias($/)
@@ -118,7 +117,7 @@ method FragmentDefinition($/)
 {
     $!q.fragments{$<FragmentName>.made} = GraphQL::Fragment.new(
         name         => $<FragmentName>.made,
-        onType       => $<TypeCondition>.made.name,
+        onType       => $<TypeCondition>.made,
         directives   => $<Directives>.made // (),
         selectionset => $<SelectionSet>.made
     );
@@ -205,6 +204,11 @@ method Value:sym<BooleanValue>($/)
 method Value:sym<NullValue>($/)
 {
     make Nil
+}
+
+method Value:sym<EnumValue>($/)
+{
+    make $<Name>.made;
 }
 
 method ObjectValue($/)
@@ -304,7 +308,7 @@ method ObjectType($/)
 
 method Implements($/)
 {
-    make $<Name>.map({ $!schema.type($_.made) });
+    make $<Name>.map({ $!schema.type(.made) });
 }
 
 method Union($/)
@@ -320,7 +324,7 @@ method Union($/)
 
 method UnionList($/)
 {
-    make $<Name>.map({ $!schema.type($_.made) });
+    make $<Name>.map({ $!schema.type(.made) });
 }
 
 method Enum($/)
@@ -398,8 +402,8 @@ method Scalar($/)
 
 method InputObject($/)
 {
-    my $o = GraphQL::InputObjectType.new(name => $<Name>.made,
-                                         inputFields => $<InputFieldList>.made);
+    my $o = GraphQL::Input.new(name => $<Name>.made,
+                               inputFields => $<InputFieldList>.made);
 
     $o.add-comment-description($/);
 
