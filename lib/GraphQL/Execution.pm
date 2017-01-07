@@ -295,7 +295,7 @@ sub CollectFields(GraphQL::Object :$objectType,
                 }
                 when GraphQL::Variable and $_.type ~~ GraphQL::Boolean
                 {
-                    next if %variables{$_.name} eq 'true';
+                    next if %variables{$_.name};
                 }
             }
         }
