@@ -10,8 +10,8 @@ use GraphQL::Validation;
 
 multi sub trait_mod:<is>(Method $m, :$graphql-background!) is export { ... }
 
-my Set $defaultTypes = set $GraphQLInt, $GraphQLFloat, $GraphQLString,
-                           $GraphQLBoolean, $GraphQLID;
+my Set $defaultTypes = set GraphQLInt, GraphQLFloat, GraphQLString,
+                           GraphQLBoolean, GraphQLID;
 
 class GraphQL::Schema
 {
@@ -71,7 +71,7 @@ class GraphQL::Schema
             args => [ GraphQL::InputValue.new(
                           name => 'name',
                           type => GraphQL::Non-Null.new(
-                              ofType => $GraphQLString
+                              ofType => GraphQLString
                               )
                           )
                     ],
@@ -116,7 +116,7 @@ class GraphQL::Schema
 
                 push $type.fieldlist, GraphQL::Field.new(
                     name => '__typename',
-                    type => $GraphQLString,
+                    type => GraphQLString,
                     resolver => sub { $type.name });
 
                 for $type.interfaces -> $int
@@ -330,11 +330,11 @@ class GraphQL::Schema
                 GraphQL::List.new(ofType => self.perl-type($type.of));
             }
 
-            when Bool   { $GraphQLBoolean }
-            when Str    { $GraphQLString  }
-            when Int    { $GraphQLInt     }
-            when Num    { $GraphQLFloat   }
-            when Cool   { $GraphQLID      }
+            when Bool   { GraphQLBoolean }
+            when Str    { GraphQLString  }
+            when Int    { GraphQLInt     }
+            when Num    { GraphQLFloat   }
+            when Cool   { GraphQLID      }
 
             default
             {
@@ -569,7 +569,7 @@ my $schema = GraphQL::Schema.new(
         name => 'Query',
         fieldlist => GraphQL::Field.new(
             name => 'hello',
-            type => $GraphQLString,
+            type => GraphQLString,
             resolver => sub { 'Hello World' }
         )
     )
@@ -710,15 +710,15 @@ scalar types:
 =begin table
 GraphQL Type | Perl Type Class  | Perl Object Instance | Perl Type
 ===========================================================================
-String       | GraphQL::String  | $GraphQLString       | Str
+String       | GraphQL::String  | GraphQLString       | Str
 
-Int          | GraphQL::Int     | $GraphQLInt          | Int
+Int          | GraphQL::Int     | GraphQLInt          | Int
 
-Float        | GraphQL::Float   | $GraphQLFloat        | Num
+Float        | GraphQL::Float   | GraphQLFloat        | Num
 
-Boolean      | GraphQL::Boolean | $GraphQLBoolean      | Bool
+Boolean      | GraphQL::Boolean | GraphQLBoolean      | Bool
 
-ID           | GraphQL::ID      | $GraphQLID           | ID (subset of Cool)
+ID           | GraphQL::ID      | GraphQLID           | ID (subset of Cool)
 ----------------------------------------------------------------------------
 =end table
 
@@ -726,7 +726,7 @@ The Perl Object Instances are just short hand pre-created objects that
 can be used since those types are needed so frequently.
 
 For example, GraphQL::String.new creates a String type, but you can
-just use $GraphQLString which is already made.
+just use GraphQLString which is already made.
 
 You can create your own additional scalar types as needed:
 
@@ -744,7 +744,7 @@ You can create your own:
 
  my $String = GraphQL::String.new;
 
-or just use C<$GraphQLString>.
+or just use C<GraphQLString>.
 
 =head4 B<GraphQL::Int> is B<GraphQL::Scalar>
 
@@ -754,7 +754,7 @@ You can create your own:
 
  my $Int = GraphQL::Int.new;
 
-or just use C<$GraphQLInt>.
+or just use C<GraphQLInt>.
 
 =head4 B<GraphQL::Float> is B<GraphQL::Scalar>
 
@@ -764,7 +764,7 @@ You can create your own:
 
  my $Float = GraphQL::Float.new;
 
-or just use C<$GraphQLFloat>.
+or just use C<GraphQLFloat>.
 
 =head4 B<GraphQL::Boolean> is B<GraphQL::Scalar>
 
@@ -774,7 +774,7 @@ You can create your own:
 
  my $Boolean = GraphQL::Boolean.new;
 
-or just use C<$GraphQLBoolean>.
+or just use C<GraphQLBoolean>.
 
 =head4 B<GraphQL::ID> is B<GraphQL::Scalar>
 
@@ -784,7 +784,7 @@ You can create your own:
 
  my $ID = GraphQL::ID.new;
 
-or just use C<$GraphQLID>.
+or just use C<GraphQLID>.
 
 =head4 B<GraphQL::EnumValue> is B<GraphQL::Scalar> does B<Deprecatable>
 
@@ -810,7 +810,7 @@ See B<GraphQL::Enum> for more information about creating EnumValues.
 B<.kind()> = 'LIST', and has B<$.ofType> with some other
 GraphQL::Type.
 
- my $list-of-strings = GraphQL::List.new(ofType => $GraphQLString);
+ my $list-of-strings = GraphQL::List.new(ofType => GraphQLString);
 
 In I<GSL>, Lists are represented by wrapping another type with square
 brackets '[' and ']'. e.g.
@@ -824,7 +824,7 @@ C<Nil>).  Wrapping them with Non-Null disallows the C<null>.
 
 B<.kind()> = 'NON_NULL'
 
- my $non-null-string = GraphQL::Non-Null.new(ofType => $GraphQLString);
+ my $non-null-string = GraphQL::Non-Null.new(ofType => GraphQLString);
 
 In I<GSL>, Non-Null types are represented by appending an exclation
 point, '!'. e.g.
@@ -851,7 +851,7 @@ B<GraphQL::Input>. Has a C<$.type> attribute and optionally
 a C<$.defaultValue> attribute.
 
  my $inputvalue = GraphQL::InputValue.new(name => 'somearg',
-                                          type => $GraphQLString,
+                                          type => GraphQLString,
                                           defaultValue => 'some default');
 
 in I<GSL>:
@@ -874,10 +874,10 @@ below.
 
  my $field = GraphQL::Field.new(
     name => 'myfield',
-    type => $GraphQLString,
+    type => GraphQLString,
     args => GraphQL::InputValue.new(
                 name => 'somearg',
-                type => $GraphQLString,
+                type => GraphQLString,
                 defaultValue => 'some default'),
     resolver => sub { ... });
 

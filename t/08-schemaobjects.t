@@ -58,11 +58,11 @@ is-deeply GraphQL::Grammar.parse('interface Entity { id: ID! name: String }',
         fieldlist => (
             GraphQL::Field.new(
                 name => 'id',
-                type => GraphQL::Non-Null.new(ofType => $GraphQLID),
+                type => GraphQL::Non-Null.new(ofType => GraphQLID),
             ),
             GraphQL::Field.new(
                 name => 'name',
-                type => $GraphQLString
+                type => GraphQLString
             )
         )
     ), 'Interface';

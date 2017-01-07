@@ -113,11 +113,21 @@ class GraphQL::ID is GraphQL::Scalar
 #
 # Default Types
 #
-our $GraphQLString  is export = GraphQL::String.new;
-our $GraphQLFloat   is export = GraphQL::Float.new;
-our $GraphQLInt     is export = GraphQL::Int.new;
-our $GraphQLBoolean is export = GraphQL::Boolean.new;
-our $GraphQLID      is export = GraphQL::ID.new;
+
+sub GraphQLString is export
+    { state $GraphQLString = GraphQL::String.new }
+
+sub GraphQLFloat is export
+    { state $GraphQLFloat = GraphQL::Float.new }
+
+sub GraphQLInt is export
+    { state $GraphQLInt = GraphQL::Int.new }
+
+sub GraphQLBoolean is export
+    { state $GraphQLBoolean = GraphQL::Boolean.new }
+
+sub GraphQLID is export
+    { state $GraphQLID = GraphQL::ID.new }
 
 class GraphQL::List is GraphQL::Type
 {

@@ -88,13 +88,13 @@ ok my $Entity = GraphQL::Interface.new(
             name => 'id',
             description => 'id field',
             type => GraphQL::Non-Null.new(
-                ofType => $GraphQLID
+                ofType => GraphQLID
             )
         ),
         GraphQL::Field.new(
             name => 'name',
             description => 'name field',
-            type => $GraphQLString
+            type => GraphQLString
         )
     )
 ), 'Make Interface Entity';
@@ -105,7 +105,7 @@ ok my $Foo = GraphQL::Interface.new(
     fieldlist => (
         GraphQL::Field.new(
             name => 'is_foo',
-            type => $GraphQLBoolean
+            type => GraphQLBoolean
         )
     )
 ), 'Make Interface Foo';
@@ -116,7 +116,7 @@ ok my $Goo = GraphQL::Interface.new(
     fieldlist => (
         GraphQL::Field.new(
             name => 'is_goo',
-            type => $GraphQLBoolean
+            type => GraphQLBoolean
         )
     )
 ), 'Make Interface Goo';
@@ -128,11 +128,11 @@ ok my $Bar = GraphQL::Object.new(
     fieldlist => (
         GraphQL::Field.new(
             name => 'is_foo',
-            type => $GraphQLBoolean
+            type => GraphQLBoolean
         ),
         GraphQL::Field.new(
             name => 'is_bar',
-            type => $GraphQLBoolean
+            type => GraphQLBoolean
         )
     )
 ), 'Make Object Bar';
@@ -144,15 +144,15 @@ ok my $Baz = GraphQL::Object.new(
     fieldlist => (
         GraphQL::Field.new(
             name => 'is_foo',
-            type => $GraphQLBoolean
+            type => GraphQLBoolean
         ),
         GraphQL::Field.new(
             name => 'is_goo',
-            type => $GraphQLBoolean
+            type => GraphQLBoolean
         ),
         GraphQL::Field.new(
             name => 'is_baz',
-            type => $GraphQLBoolean
+            type => GraphQLBoolean
         )
     )
 ), 'Make Object Baz';
@@ -162,7 +162,7 @@ ok my $Person = GraphQL::Object.new(
     fieldlist => (
         GraphQL::Field.new(
             name => 'name',
-            type => $GraphQLString
+            type => GraphQLString
         )
     )
 ), 'Make Object Person';
@@ -172,7 +172,7 @@ ok my $Pet = GraphQL::Object.new(
     fieldlist => (
         GraphQL::Field.new(
             name => 'name',
-            type => $GraphQLString
+            type => GraphQLString
         )
     )
 ), 'Make Object Pet';
@@ -217,12 +217,12 @@ ok my $User = GraphQL::Object.new(
         GraphQL::Field.new(
             name => 'id',
             type => GraphQL::Non-Null.new(
-                ofType => $GraphQLID
+                ofType => GraphQLID
             )
         ),
         GraphQL::Field.new(
             name => 'name',
-            type => $GraphQLString
+            type => GraphQLString
         ),
         GraphQL::Field.new(
             name => 'website',

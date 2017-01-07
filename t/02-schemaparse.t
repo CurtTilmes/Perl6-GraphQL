@@ -18,7 +18,7 @@ GraphQL::Schema.new(
         name => 'Query',
         fields => GraphQL::Field.new(
             name => 'hello',
-            type => $GraphQLString
+            type => GraphQLString
         )
     )
 ),
@@ -38,7 +38,7 @@ GraphQL::Schema.new(
         fields => GraphQL::Field.new(
             name => 'hello',
             description => 'field description for hello',
-            type => $GraphQLString
+            type => GraphQLString
         )
     )
 ),
@@ -54,7 +54,7 @@ GraphQL::Schema.new(
         name => 'Query',
         fields => GraphQL::Field.new(
             name => 'hello',
-            type => GraphQL::Non-Null.new(ofType => $GraphQLString)
+            type => GraphQL::Non-Null.new(ofType => GraphQLString)
         )
     )
 ),
@@ -70,7 +70,7 @@ GraphQL::Schema.new(
         name => 'Query',
         fields => GraphQL::Field.new(
             name => 'hello',
-            type => GraphQL::List.new(ofType => $GraphQLString)
+            type => GraphQL::List.new(ofType => GraphQLString)
         )
     )
 ),
@@ -89,7 +89,7 @@ GraphQL::Schema.new(
             type => GraphQL::Non-Null.new(
                 ofType => GraphQL::List.new(
                     ofType => GraphQL::Non-Null.new(
-                        ofType => $GraphQLString)
+                        ofType => GraphQLString)
                 )
             )
         )
@@ -113,23 +113,23 @@ GraphQL::Schema.new(
             GraphQL::Field.new(
                 name => 'id',
                 type => GraphQL::Non-Null.new(
-                    ofType => $GraphQLID)
+                    ofType => GraphQLID)
             ),
             GraphQL::Field.new(
                 name => 'name',
-                type => $GraphQLString
+                type => GraphQLString
             ),
             GraphQL::Field.new(
                 name => 'age',
-                type => $GraphQLInt
+                type => GraphQLInt
             ),
             GraphQL::Field.new(
                 name => 'balance',
-                type => $GraphQLFloat
+                type => GraphQLFloat
             ),
             GraphQL::Field.new(
                 name => 'is_active',
-                type => $GraphQLBoolean
+                type => GraphQLBoolean
             )
         )
     )
@@ -147,12 +147,12 @@ GraphQL::Schema.new(
         fields => (
             GraphQL::Field.new(
                 name => 'hello',
-                type => $GraphQLString,
+                type => GraphQLString,
                 args =>
                 [
                  GraphQL::InputValue.new(
                      name => 'limit',
-                     type => $GraphQLInt
+                     type => GraphQLInt
                  )
                 ]
             )
@@ -172,12 +172,12 @@ GraphQL::Schema.new(
         fields => (
             GraphQL::Field.new(
                 name => 'hello',
-                type => $GraphQLString,
+                type => GraphQLString,
                 args =>
                 [
                  GraphQL::InputValue.new(
                      name => 'limit',
-                     type => $GraphQLInt,
+                     type => GraphQLInt,
                      defaultValue => 10
                  )
                 ]
@@ -198,28 +198,28 @@ GraphQL::Schema.new(
         fields => (
             GraphQL::Field.new(
                 name => 'hello',
-                type => $GraphQLString,
+                type => GraphQLString,
                 args =>
                 [
                  GraphQL::InputValue.new(
                      name => 'id',
-                     type => $GraphQLID
+                     type => GraphQLID
                  ),
                  GraphQL::InputValue.new(
                      name => 'first',
-                     type => $GraphQLInt
+                     type => GraphQLInt
                  ),
                  GraphQL::InputValue.new(
                      name => 'x',
-                     type => $GraphQLFloat
+                     type => GraphQLFloat
                  ),
                  GraphQL::InputValue.new(
                      name => 'cond',
-                     type => $GraphQLBoolean
+                     type => GraphQLBoolean
                  ),
                  GraphQL::InputValue.new(
                      name => 'person',
-                     type => $GraphQLString
+                     type => GraphQLString
                  )
                 ]
             )
@@ -243,32 +243,32 @@ GraphQL::Schema.new(
         fields =>
             GraphQL::Field.new(
                 name => 'hello',
-                type => $GraphQLString,
+                type => GraphQLString,
                 args =>
                 [
                  GraphQL::InputValue.new(
                      name => 'id',
-                     type => $GraphQLID,
+                     type => GraphQLID,
                      defaultValue => '123xyz'
                  ),
                  GraphQL::InputValue.new(
                      name => 'first',
-                     type => $GraphQLInt,
+                     type => GraphQLInt,
                      defaultValue => 27
                  ),
                  GraphQL::InputValue.new(
                      name => 'x',
-                     type => $GraphQLFloat,
+                     type => GraphQLFloat,
                      defaultValue => Num(1.2)
                  ),
                  GraphQL::InputValue.new(
                      name => 'cond',
-                     type => $GraphQLBoolean,
+                     type => GraphQLBoolean,
                      defaultValue => True,
                  ),
                  GraphQL::InputValue.new(
                      name => 'person',
-                     type => $GraphQLString,
+                     type => GraphQLString,
                      defaultValue => 'Fred'
                  )
                 ]
