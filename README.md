@@ -100,3 +100,7 @@ is very simple, that won't take long), and interactively construct and
 execute GraphQL queries.
 
 See [eg/usersexample.md](https://github.com/golpa/Perl6-GraphQL/blob/master/eg/usersexample.md) for a more complicated example.
+
+Copyright © 2017 United States Government as represented by _Curt
+Tilmes_.  No copyright is claimed in the United States under Title 17,
+U.S.Code. All Other Rights Reserved.

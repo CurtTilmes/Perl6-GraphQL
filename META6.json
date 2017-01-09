@@ -1,0 +1,30 @@
+{
+    "name" : "GraphQL",
+
+    "version" : "0.5",
+
+    "source-url" : "git://github.com/CurtTilmes/Perl6-GraphQL.git",
+
+    "perl" : "6.c",
+
+    "provides" : {
+        "GraphQL" : "lib/GraphQL.pm"
+    },
+
+    "depends" : [ "JSON::Fast", "Text::Wrap", "Bailador" ],
+
+    "description" : "Perl6 implementation of GraphQL",
+
+    "test-depends" : [ "Test" ],
+
+    "version" : "0.01",
+
+    "license" : "NASA",
+
+    "authors" : [ "Curt Tilmes <Curt.Tilmes@nasa.gov>" ],
+
+    "support" : { 
+      "source" : "git://github.com/CurtTilmes/Perl6-GraphQL.git",
+      "bugtracker" : "https://github.com/CurtTilmes/Perl6-GraphQL/issues"
+    }
+}
