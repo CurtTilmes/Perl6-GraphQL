@@ -97,7 +97,7 @@ class GraphQL::Boolean is GraphQL::Scalar
 
     method to-json($name, $value, $indent)
     {
-        qq<$indent"$name": "{$value ?? 'true' !! 'false'}">
+        qq<$indent"$name": {$value ?? 'true' !! 'false'}>
     }
 
     method coerce($value) { $value }
