@@ -116,11 +116,11 @@ Q<<{
     "allusers": [
       {
         "name": "Ginger",
-        "status": "true"
+        "status": true
       },
       {
         "name": "Mary Anne",
-        "status": "true"
+        "status": true
       }
     ]
   }
@@ -171,19 +171,19 @@ Q<<{
     "allusers": [
       {
         "name": "Skipper",
-        "status": "false"
+        "status": false
       },
       {
         "name": "Professor",
-        "status": "true"
+        "status": true
       },
       {
         "name": "Ginger",
-        "status": "true"
+        "status": true
       },
       {
         "name": "Mary Anne",
-        "status": "true"
+        "status": true
       }
     ]
   }

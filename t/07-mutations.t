@@ -162,7 +162,7 @@ Q<<{
     "updateuser": {
       "id": "3",
       "birthday": "Saturday",
-      "status": "false",
+      "status": false,
       "name": "Fred"
     }
   }
@@ -188,7 +188,7 @@ Q<<{
     "updateuser": {
       "id": "2",
       "birthday": "Sunday",
-      "status": "true",
+      "status": true,
       "name": "John"
     }
   }
@@ -227,7 +227,7 @@ Q<<{
     "user": {
       "id": "5",
       "birthday": "Tuesday",
-      "status": "true",
+      "status": true,
       "name": "Thurston"
     }
   }

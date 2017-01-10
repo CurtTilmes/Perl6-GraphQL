@@ -68,7 +68,7 @@ Q<<{
       "name": "Fred",
       "id": "7",
       "birthday": "Friday",
-      "status": "true",
+      "status": true,
       "someextra": "an extra field"
     }
   }
