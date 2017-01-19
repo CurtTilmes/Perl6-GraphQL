@@ -220,7 +220,7 @@ class GraphQL::Schema
         {
             next if @fields.first: { $m.name eq .name };
 
-            next if $m.name eq 'BUILD';
+            next if $m.name eq 'new'|'BUILD';
 
             die "Invalid characters in $m.name()"
                 unless $m.name ~~ /^<[_A..Za..z]><[_0..9A..Za..z]>*$/;
