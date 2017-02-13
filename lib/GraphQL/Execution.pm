@@ -14,7 +14,8 @@ sub ExecuteRequest(:$document,
                    Str :$operationName,
                    :%variables,
                    :$initialValue,
-                   :$schema) is export
+                   :$schema,
+                   :%session) is export
 {
     my $operation = $document.GetOperation($operationName);
 
@@ -33,14 +34,16 @@ sub ExecuteRequest(:$document,
                         :$objectType,
                         :$objectValue,
                         :%variables,
-                        :$document);
+                        :$document,
+                        :%session);
 }
 
 sub ExecuteSelectionSet(:@selectionSet,
                         GraphQL::Object :$objectType,
                         :$objectValue! is rw,
                         :%variables,
-                        GraphQL::Document :$document)
+                        GraphQL::Document :$document,
+                        :%session)
 {
     my @groupedFieldSet = CollectFields(:$objectType,
                                         :@selectionSet,
@@ -66,7 +69,8 @@ sub ExecuteSelectionSet(:@selectionSet,
                                       :@fields,
                                       :$fieldType,
                                       :%variables,
-                                      :$document);
+                                      :$document,
+                                      :%session);
 
         my $type = $fieldType ~~ GraphQL::Interface | GraphQL::Union
             ?? GraphQL::Object
@@ -85,7 +89,8 @@ sub ExecuteField(GraphQL::Object :$objectType,
                  :@fields,
                  GraphQL::Type :$fieldType,
                  :%variables,
-                 :$document)
+                 :$document,
+                 :%session)
 {
     my $field = @fields[0];
 
@@ -98,7 +103,8 @@ sub ExecuteField(GraphQL::Object :$objectType,
     my $resolvedValue = ResolveFieldValue(:$objectType,
                                           :$objectValue,
                                           :$fieldName,
-                                          :%argumentValues);
+                                          :%argumentValues,
+                                          :%session);
 
     if $resolvedValue ~~ Promise
     {
@@ -426,7 +432,8 @@ sub ResolveArgs(Signature $sig, *%allargs)
 sub ResolveFieldValue(GraphQL::Object :$objectType,
                       :$objectValue!,
                       :$fieldName,
-                      :%argumentValues)
+                      :%argumentValues,
+                      :%session)
 {
     my $field = $objectType.field($fieldName) or return;
 
@@ -434,7 +441,8 @@ sub ResolveFieldValue(GraphQL::Object :$objectType,
     {
         my $args = ResolveArgs($field.resolver.signature,
                                :$objectValue,
-                               |%argumentValues);
+                               |%argumentValues,
+                               |%session);
 
         if $field.resolver ~~ Sub
         {

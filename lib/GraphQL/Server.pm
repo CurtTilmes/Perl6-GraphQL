@@ -17,7 +17,8 @@ sub GraphQL-Server($s) is export
         my $request = from-json(request.body);
         my $operationName = $request<operationName>;
         my %variables = $request<variables> // ();
-        $schema.execute($request<query>, :%variables,
+        content_type('application/json');
+        $schema.execute($request<query>, :%variables, http-request => request,
                         |(:$operationName if $operationName)).to-json
     }
 }

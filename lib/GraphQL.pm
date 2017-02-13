@@ -20,13 +20,16 @@ class GraphQL::Schema
     has Str $.query is rw = 'Query';
     has Str $.mutation is rw;
     has Str $.subscription is rw;
+    has %.stash is rw;
     has @.errors;
     has $!resolved-schema;
 
-    multi method new(:$query, :$mutation, :$subscription, :$resolvers, *@types)
+    multi method new(:$query, :$mutation, :$subscription, :$resolvers, *@types,
+        *%stash-vars)
         returns GraphQL::Schema
     {
         my $schema = GraphQL::Schema.bless;
+        $schema.stash{%stash-vars.keys} = %stash-vars.values;
 
         $schema.add-type($defaultTypes.keys);
 
@@ -48,10 +51,11 @@ class GraphQL::Schema
         return $schema;
     }
 
-    multi method new(Str $schemastring, :$resolvers)
+    multi method new(Str $schemastring, :$resolvers, *%stash-vars)
         returns GraphQL::Schema
     {
         my $schema = GraphQL::Schema.new;
+        $schema.stash{%stash-vars.keys} = %stash-vars.values;
         
         my $actions = GraphQL::Actions.new(:$schema);
 
@@ -206,8 +210,7 @@ class GraphQL::Schema
 
             my $name = $var.Str;
 
-            die "Invalid characters in $name"
-                unless $name ~~ /^<[_A..Za..z]><[_0..9A..Za..z]>*$/;
+            next unless $name ~~ /^<[_A..Za..z]><[_0..9A..Za..z]>*$/;
 
             my $type = self.perl-type($a.type);
 
@@ -222,8 +225,7 @@ class GraphQL::Schema
 
             next if $m.name eq 'new'|'BUILD';
 
-            die "Invalid characters in $m.name()"
-                unless $m.name ~~ /^<[_A..Za..z]><[_0..9A..Za..z]>*$/;
+            next unless $m.name ~~ /^<[_A..Za..z]><[_0..9A..Za..z]>*$/;
 
             my GraphQL::InputValue @args;
 
@@ -237,8 +239,7 @@ class GraphQL::Schema
 
                 my $name = $p.named_names[0] or next;
 
-                die "Invalid characters in $name"
-                    unless $name ~~ /^<[_A..Za..z]><[_0..9A..Za..z]>*$/;
+                next unless $name ~~ /^<[_A..Za..z]><[_0..9A..Za..z]>*$/;
 
                 my $type = self.perl-type($p.type);
 
@@ -429,9 +430,12 @@ class GraphQL::Schema
                    GraphQL::Document :document($doc),
                    Str :$operationName,
                    :%variables,
-                   :$initialValue)
+                   :$initialValue,
+                   *%session)
     {
         self.resolve-schema unless $!resolved-schema++;
+
+        %session{%!stash.keys} = %!stash.values;
 
         @!errors = ();
 
@@ -445,7 +449,8 @@ class GraphQL::Schema
                                   :$operationName,
                                   :%variables,
                                   :$initialValue,
-                                  schema => self);
+                                  schema => self,
+                                  :%session);
 
             CATCH {
                 default {
