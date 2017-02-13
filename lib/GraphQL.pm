@@ -212,7 +212,7 @@ class GraphQL::Schema
 
             next unless $name ~~ /^<[_A..Za..z]><[_0..9A..Za..z]>*$/;
 
-            next if $a.type ~~ Mu;
+            next unless $a.type ~~ Any;
 
             my $type = self.perl-type($a.type);
 
@@ -233,7 +233,7 @@ class GraphQL::Schema
 
             my $sig = $m.signature;
 
-            next if $sig.returns ~~ Mu;
+            next unless $sig.returns ~~ Any;
 
             my $type = self.perl-type($sig.returns);
 
@@ -244,6 +244,8 @@ class GraphQL::Schema
                 my $name = $p.named_names[0] or next;
 
                 next unless $name ~~ /^<[_A..Za..z]><[_0..9A..Za..z]>*$/;
+
+                next unless $p.type ~~ Any;
 
                 my $type = self.perl-type($p.type);
 
