@@ -8,7 +8,7 @@ for APIs originally created by Facebook.
 ## Intro
 
 Before we get into all the details, here's the Perl 6 GraphQL "Hello World"
-[hello.pl](https://github.com/golpa/Perl6-GraphQL/blob/master/eg/hello.pl)
+[hello.pl](https://github.com/CurtTilmes/Perl6-GraphQL/blob/master/eg/hello.pl)
 
 
 ```
@@ -99,7 +99,7 @@ You can use that to explore the schema (though the Hello World schema
 is very simple, that won't take long), and interactively construct and
 execute GraphQL queries.
 
-See [eg/usersexample.md](https://github.com/golpa/Perl6-GraphQL/blob/master/eg/usersexample.md) for a more complicated example.
+See [eg/usersexample.md](https://github.com/CurtTilmes/Perl6-GraphQL/blob/master/eg/usersexample.md) for a more complicated example.
 
 Copyright © 2017 United States Government as represented by _Curt
 Tilmes_.  No copyright is claimed in the United States under Title 17,
