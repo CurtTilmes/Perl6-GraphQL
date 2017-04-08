@@ -3,5 +3,10 @@ perl6:
   - latest
 install:
   - rakudobrew build zef
-  - zef --depsonly install .
+  - zef install .
+script:
+  # README.md examples
+  - perl6 eg/hello.pl --help
+  - perl6 eg/hello.pl '{ __schema { queryType { name } } }'
+  - perl6 eg/hello.pl '{ __type(name: "Query") { fields { name type { name }}}}'
 sudo: false
