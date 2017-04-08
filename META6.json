@@ -8,7 +8,17 @@
     "perl" : "6.c",
 
     "provides" : {
-        "GraphQL" : "lib/GraphQL.pm"
+        "GraphQL" : "lib/GraphQL.pm",
+        "GraphQL::Actions" : "lib/GraphQL/Actions.pm",
+        "GraphQL::Compare" : "lib/GraphQL/Compare.pm",
+        "GraphQL::Execution" : "lib/GraphQL/Execution.pm",
+        "GraphQL::Grammar" : "lib/GraphQL/Grammar.pm",
+        "GraphQL::GraphiQL" : "lib/GraphQL/GraphiQL.pm",
+        "GraphQL::Introspection" : "lib/GraphQL/Introspection.pm",
+        "GraphQL::Response" : "lib/GraphQL/Response.pm",
+        "GraphQL::Server" : "lib/GraphQL/Server.pm",
+        "GraphQL::Types" : "lib/GraphQL/Types.pm",
+        "GraphQL::Validation" : "lib/GraphQL/Validation.pm"
     },
 
     "depends" : [ "JSON::Fast", "Text::Wrap", "Bailador" ],
@@ -16,8 +26,6 @@
     "description" : "Perl6 implementation of GraphQL",
 
     "test-depends" : [ "Test" ],
-
-    "version" : "0.01",
 
     "license" : "NASA",
 
