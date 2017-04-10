@@ -366,17 +366,9 @@ my @good = Q<<
     }
 >>;
 
-my @bad = '{}';
-    
-
 for @good -> $query
 {
     ok GraphQL::Grammar.parse($query, rule => 'Document');
-}
-
-for @bad -> $query
-{
-    nok GraphQL::Grammar.parse($query, rule => 'Document');
 }
 
 done-testing;

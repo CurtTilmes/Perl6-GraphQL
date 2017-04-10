@@ -2,6 +2,24 @@
 
 unit grammar GraphQL::Grammar;
 
+#
+# Adapted expect() and error() from
+# https://perlgeek.de/blog-en/perl-6/2017-007-book-parse-errors.html
+#
+
+method expect($what)
+{
+    self.error("expected $what");
+}
+
+method error($msg)
+{
+    my $parsed-so-far = self.target.substr(0, self.pos);
+    my @lines = $parsed-so-far.lines;
+    die "Parse failure: $msg at line @lines.elems()" ~
+        ("after '@lines[*-1]'" if @lines.elems > 1);
+}
+
 token SourceCharacter { <[\x[0009]\x[000A]\x[000D]\x[0020]..\x[FFFF]]> }
 
 token Ignored
@@ -37,11 +55,9 @@ token NonZeroDigit { <[1..9]>}
 
 token FloatValue
 { 
-  [
     <.IntegerPart> <.FractionalPart> |
     <.IntegerPart> <.ExponentPart>   |
     <.IntegerPart> <.FractionalPart> <.ExponentPart>
-  ]
 }
 
 token FractionalPart { '.' <.Digit>+ }
@@ -79,9 +95,10 @@ rule OperationDefinition
 
 token OperationType { 'query' | 'mutation' }
 
-rule SelectionSet { '{' <.Comment>* % <.ws>
+rule SelectionSet { '{' [ <.Comment>* % <.ws>
                         <Selection>+
-                        <.Comment>* % <.ws> '}' }
+                        <.Comment>* % <.ws>
+                    '}' || <expect('}')> ] }
 
 rule Selection { <QueryField> | <FragmentSpread> | <InlineFragment> }
 
