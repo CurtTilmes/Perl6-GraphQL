@@ -1,6 +1,8 @@
 Perl 6 GraphQL
 ==============
 
+[![Build Status](https://travis-ci.org/CurtTilmes/Perl6-GraphQL.svg)](https://travis-ci.org/CurtTilmes/Perl6-GraphQL)
+
 A [Perl 6](https://perl6.org/) implementation of the
 [GraphQL](http://graphql.org/) standard.  GraphQL is a query language
 for APIs originally created by Facebook.
