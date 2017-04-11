@@ -105,7 +105,7 @@ execute GraphQL queries.
 
 ## More documentation
 
-See [eg/usersexample.md](https://github.com/CurtTilmes/Perl6-GraphQL/blob/master/eg/usersexample.md) for a more complicated example.
+See [eg/usersexample.md](/eg/usersexample.md) for a more complicated example.
 
 See [slides](https://curttilmes.github.com/2017-GraphQL-PHLPM) from a
 presentation about Perl 6 GraphQL at the Philadelphia Perl Mongers.
