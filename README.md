@@ -74,6 +74,8 @@ $ perl6 hello.pl '{ __type(name: "Query") { fields { name type { name }}}}'
 }
 ```
 
+## Running as a server
+
 That's fine for the command line, but you can also easily wrap GraphQL
 into a web server to expose that API to external clients.  GraphQL::Server
 uses the Perl 6 web framework
@@ -101,10 +103,14 @@ You can use that to explore the schema (though the Hello World schema
 is very simple, that won't take long), and interactively construct and
 execute GraphQL queries.
 
+## More documentation
+
 See [eg/usersexample.md](https://github.com/CurtTilmes/Perl6-GraphQL/blob/master/eg/usersexample.md) for a more complicated example.
 
 See [slides](https://curttilmes.github.com/2017-GraphQL-PHLPM) from a
 presentation about Perl 6 GraphQL at the Philadelphia Perl Mongers.
+
+[GraphQL Documentation](/blob/master/doc/GraphQL.md)
 
 Copyright © 2017 United States Government as represented by the
 Administrator of the National Aeronautics and Space Administration.
