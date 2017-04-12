@@ -6,6 +6,8 @@
     "source-url" : "git://github.com/CurtTilmes/Perl6-GraphQL.git",
 
     "perl" : "6.c",
+    
+    "tags" : [ "GraphQL" ],
 
     "provides" : {
         "GraphQL" : "lib/GraphQL.pm",
