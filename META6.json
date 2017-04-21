@@ -29,7 +29,7 @@
 
     "test-depends" : [ "Test" ],
 
-    "license" : "NASA",
+    "license" : "NASA-1.3",
 
     "authors" : [ "Curt Tilmes <Curt.Tilmes@nasa.gov>" ],
 
