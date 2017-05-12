@@ -3,7 +3,7 @@ unit module GraphQL::Execution;
 use GraphQL::Types;
 use GraphQL::Response;
 
-my Set $background-methods;
+my Set $background-methods = Set.new;
 
 multi sub trait_mod:<is>(Method $m, :$graphql-background!) is export
 {
