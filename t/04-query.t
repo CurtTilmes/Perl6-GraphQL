@@ -27,13 +27,13 @@ $schema.resolvers(
     }
 });
 
-my @testcases = 
+my @testcases =
 'Single field',
 Q<<
 {
     name
 }
->>, 
+>>,
 Q<<{
   "data": {
     "name": "Fred"
@@ -47,7 +47,7 @@ Q<<
     id
     birthday
 }
->>, 
+>>,
 Q<<{
   "data": {
     "name": "Fred",
@@ -64,7 +64,7 @@ Q<<
     mybday: birthday
     orcallme: name
 }
->>, 
+>>,
 Q<<{
   "data": {
     "callme": "Fred",
@@ -86,7 +86,7 @@ fragment morestuff on User {
     callme: name
     mybday: birthday
 }
->>, 
+>>,
 Q<<{
   "data": {
     "name": "Fred",
@@ -108,7 +108,7 @@ query foo {
     }
     birthday
 }
->>, 
+>>,
 Q<<{
   "data": {
     "name": "Fred",

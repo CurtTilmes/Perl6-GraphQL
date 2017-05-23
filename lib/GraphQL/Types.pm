@@ -1,5 +1,6 @@
 unit module GraphQL::Types;
 use Text::Wrap;
+use JSON::Fast;
 
 subset ID of Cool is export;
 
@@ -56,7 +57,7 @@ class GraphQL::Scalar is GraphQL::Type
 
     method to-json($name, $value, $indent)
     {
-        qq<$indent"$name": > ~ ($value.defined ?? qq<"$value"> !! 'null')
+        qq<$indent"$name": > ~ ($value.defined ?? to-json($value.Str) !! 'null')
     }
 }
 
@@ -71,36 +72,36 @@ class GraphQL::Int is GraphQL::Scalar
 {
     has Str $.name = 'Int';
 
+    method coerce($value) { $value.Int }
+
     method to-json($name, $value, $indent)
     {
-        qq<$indent"$name": {$value}>
+        qq<$indent"$name": > ~ ($value.defined ?? $value.Str !! 'null')
     }
-
-    method coerce($value) { $value.Int }
 }
 
 class GraphQL::Float is GraphQL::Scalar
 {
     has Str $.name = 'Float';
 
+    method coerce($value) { $value.Num }
+
     method to-json($name, $value, $indent)
     {
-        qq<$indent"$name": {$value}>
+        qq<$indent"$name": > ~ ($value.defined ?? $value.Str !! 'null')
     }
-
-    method coerce($value) { $value.Num }
 }
 
 class GraphQL::Boolean is GraphQL::Scalar
 {
     has Str $.name = 'Boolean';
 
+    method coerce($value) { $value }
+
     method to-json($name, $value, $indent)
     {
         qq<$indent"$name": {$value ?? 'true' !! 'false'}>
     }
-
-    method coerce($value) { $value }
 }
 
 class GraphQL::ID is GraphQL::Scalar
@@ -132,7 +133,7 @@ sub GraphQLID is export
 class GraphQL::List is GraphQL::Type
 {
     has GraphQL::Type $.ofType is rw;
-    
+
     method kind(--> Str) { 'LIST' };
 
     method name { '[' ~ $.ofType.name ~ ']' }
@@ -254,7 +255,7 @@ class GraphQL::Object is GraphQL::Type does HasFields
     method kind(--> Str) { 'OBJECT' };
 
     method addfield($field) { push @!fieldlist, $field }
-    
+
     method fragment-applies(GraphQL::Type $fragmentType --> Bool)
     {
         given $fragmentType
@@ -274,7 +275,7 @@ class GraphQL::Object is GraphQL::Type does HasFields
     method Str
     {
         self.description-comment ~
-        "type $.name " ~ 
+        "type $.name " ~
             ('implements ' ~ (@!interfaces».name).join(', ') ~ ' '
                 if @.interfaces)
         ~ "\{\n" ~ self.fields-str('  ') ~ "\n}\n"
@@ -340,7 +341,7 @@ class GraphQL::Enum is GraphQL::Type
     {
 	@!enumValues.grep: { $includeDeprecated or not .isDeprecated }
     }
-    
+
     method valid($value) returns Bool
     {
         return Nil unless $value.defined;
@@ -366,7 +367,7 @@ class GraphQL::Enum is GraphQL::Type
 
     method to-json($name, $value, $indent)
     {
-        qq<$indent"$name": > ~ ($value.defined ?? qq<"$value"> !! 'null')
+        qq<$indent"$name": > ~ to-json($value)
     }
 }
 

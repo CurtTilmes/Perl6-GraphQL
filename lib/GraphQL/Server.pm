@@ -12,7 +12,7 @@ sub GraphQL-Server($s) is export
     get '/' => sub { redirect('/graphql') }
 
     get '/graphql' => sub { $GraphiQL }
-    
+
     post '/graphql' => sub {
         my $request = from-json(request.body);
         my $operationName = $request<operationName>;

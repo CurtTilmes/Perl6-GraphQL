@@ -1,12 +1,12 @@
 {
     "name" : "GraphQL",
 
-    "version" : "0.5",
+    "version" : "0.5.1",
 
     "source-url" : "git://github.com/CurtTilmes/Perl6-GraphQL.git",
 
     "perl" : "6.c",
-    
+
     "tags" : [ "GraphQL" ],
 
     "provides" : {
@@ -33,7 +33,7 @@
 
     "authors" : [ "Curt Tilmes <Curt.Tilmes@nasa.gov>" ],
 
-    "support" : { 
+    "support" : {
       "source" : "git://github.com/CurtTilmes/Perl6-GraphQL.git",
       "bugtracker" : "https://github.com/CurtTilmes/Perl6-GraphQL/issues"
     }

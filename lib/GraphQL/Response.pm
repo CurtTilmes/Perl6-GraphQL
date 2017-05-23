@@ -7,7 +7,7 @@ class GraphQL::Response
     has Str $.name;
     has GraphQL::Type $.type;
     has $.value;
-    
+
     method to-json(Str $indent = '')
     {
         $!value = await $!value if $!value ~~ Promise;
