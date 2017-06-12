@@ -51,7 +51,7 @@ Q<<
 Q<<{
   "data": {
     "name": "Fred",
-    "id": "7",
+    "id": 7,
     "birthday": "Friday"
   }
 }>>,
@@ -68,7 +68,7 @@ Q<<
 Q<<{
   "data": {
     "callme": "Fred",
-    "id": "7",
+    "id": 7,
     "mybday": "Friday",
     "orcallme": "Fred"
   }
@@ -90,7 +90,7 @@ fragment morestuff on User {
 Q<<{
   "data": {
     "name": "Fred",
-    "id": "7",
+    "id": 7,
     "callme": "Fred",
     "mybday": "Friday",
     "birthday": "Friday"
@@ -112,7 +112,7 @@ query foo {
 Q<<{
   "data": {
     "name": "Fred",
-    "id": "7",
+    "id": 7,
     "callme": "Fred",
     "mybday": "Friday",
     "birthday": "Friday"

@@ -80,7 +80,7 @@ my @testcases =
 Q<<{
   "data": {
     "user": {
-      "id": "3",
+      "id": 3,
       "name": "Ginger"
     }
   }
@@ -97,7 +97,7 @@ Q<<{
   "data": {
     "allusers": [
       {
-        "id": "0",
+        "id": 0,
         "name": "Gilligan"
       }
     ]
@@ -136,7 +136,7 @@ Q<<{
 Q<<{
   "data": {
     "user": {
-      "id": "3",
+      "id": 3,
       "name": "Ginger"
     }
   }
@@ -152,7 +152,7 @@ Q<<{
 Q<<{
   "data": {
     "user": {
-      "id": "4",
+      "id": 4,
       "name": "Mary Anne"
     }
   }
@@ -199,7 +199,7 @@ Q<<{
 Q<<{
   "data": {
     "user": {
-      "id": "4",
+      "id": 4,
       "name": "Mary Anne"
     }
   }
@@ -215,7 +215,7 @@ Q<<{
 Q<<{
   "data": {
     "user": {
-      "id": "4"
+      "id": 4
     }
   }
 }>>,
@@ -230,7 +230,7 @@ Q<<{
 Q<<{
   "data": {
     "user": {
-      "id": "4",
+      "id": 4,
       "name": "Mary Anne"
     }
   }
@@ -246,7 +246,7 @@ Q<<{
 Q<<{
   "data": {
     "user": {
-      "id": "4",
+      "id": 4,
       "name": "Mary Anne"
     }
   }
@@ -262,7 +262,7 @@ Q<<{
 Q<<{
   "data": {
     "user": {
-      "id": "4"
+      "id": 4
     }
   }
 }>>,
@@ -277,7 +277,7 @@ Q<<{
 Q<<{
   "data": {
     "user": {
-      "id": "4",
+      "id": 4,
       "name": "Mary Anne"
     }
   }
@@ -293,7 +293,7 @@ Q<<{
 Q<<{
   "data": {
     "user": {
-      "id": "4"
+      "id": 4
     }
   }
 }>>,
@@ -308,7 +308,7 @@ Q<<{
 Q<<{
   "data": {
     "user": {
-      "id": "4",
+      "id": 4,
       "name": "Mary Anne"
     }
   }

@@ -57,7 +57,7 @@ class GraphQL::Scalar is GraphQL::Type
 
     method to-json($name, $value, $indent)
     {
-        qq<$indent"$name": > ~ ($value.defined ?? to-json($value.Str) !! 'null')
+        qq<$indent"$name": > ~ to-json($value)
     }
 }
 
@@ -73,11 +73,6 @@ class GraphQL::Int is GraphQL::Scalar
     has Str $.name = 'Int';
 
     method coerce($value) { $value.Int }
-
-    method to-json($name, $value, $indent)
-    {
-        qq<$indent"$name": > ~ ($value.defined ?? $value.Str !! 'null')
-    }
 }
 
 class GraphQL::Float is GraphQL::Scalar
@@ -85,11 +80,6 @@ class GraphQL::Float is GraphQL::Scalar
     has Str $.name = 'Float';
 
     method coerce($value) { $value.Num }
-
-    method to-json($name, $value, $indent)
-    {
-        qq<$indent"$name": > ~ ($value.defined ?? $value.Str !! 'null')
-    }
 }
 
 class GraphQL::Boolean is GraphQL::Scalar
@@ -100,7 +90,7 @@ class GraphQL::Boolean is GraphQL::Scalar
 
     method to-json($name, $value, $indent)
     {
-        qq<$indent"$name": {$value ?? 'true' !! 'false'}>
+        qq<$indent"$name": > ~ ($value ?? 'true' !! 'false')
     }
 }
 
@@ -367,7 +357,7 @@ class GraphQL::Enum is GraphQL::Type
 
     method to-json($name, $value, $indent)
     {
-        qq<$indent"$name": > ~ to-json($value)
+        qq<$indent"$name": "$value">
     }
 }
 

@@ -99,7 +99,7 @@ $schema.resolvers(
     }
 });
 
-my @testcases = 
+my @testcases =
 'Get user 3',
 
 '{ user(id: 3) { id, name } }',
@@ -150,7 +150,7 @@ Q<<{
 #----------------------------------------------------------------------
 'Update user 3, change multiple fields',
 
-'mutation { updateuser(id: 3, 
+'mutation { updateuser(id: 3,
     userinput: { name: "Fred", birthday: "Saturday", status: false })
     { id, birthday, status, name }
 }',
@@ -211,7 +211,7 @@ Q<<{
 
 Q<<{
   "data": {
-    "adduser": "5"
+    "adduser": 5
   }
 }>>,
 

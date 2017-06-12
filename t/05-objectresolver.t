@@ -61,12 +61,12 @@ query {
 
 ok my $ret = $schema.execute(:$document), 'Execute query';
 
-is $ret.to-json, 
+is $ret.to-json,
 Q<<{
   "data": {
     "user": {
       "name": "Fred",
-      "id": "7",
+      "id": 7,
       "birthday": "Friday",
       "status": true,
       "someextra": "an extra field"
