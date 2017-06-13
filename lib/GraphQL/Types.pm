@@ -357,7 +357,7 @@ class GraphQL::Enum is GraphQL::Type
 
     method to-json($name, $value, $indent)
     {
-        qq<$indent"$name": "$value">
+        qq<$indent"$name": > ~ ($value.defined ?? qq<"$value"> !! 'null');
     }
 }
 
