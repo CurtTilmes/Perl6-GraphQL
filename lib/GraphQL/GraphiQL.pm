@@ -49,8 +49,8 @@ our $GraphiQL is export = Q«
       copy them directly into your environment, or perhaps include them in your
       favored resource bundler.
      -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/graphiql/0.8.0/graphiql.css" />
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/graphiql/0.8.0/graphiql.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/graphiql/0.10.2/graphiql.min.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/graphiql/0.10.2/graphiql.min.js"></script>
 
   </head>
   <body>
