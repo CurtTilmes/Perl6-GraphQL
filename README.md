@@ -103,6 +103,22 @@ You can use that to explore the schema (though the Hello World schema
 is very simple, that won't take long), and interactively construct and
 execute GraphQL queries.
 
+## Embedding in a Cro server
+
+As an alternative to Bailador, you can use Cro::HTTP::Router::GraphQL
+to embed GraphQL into [Cro](http://mi.cro.services/) HTTP routes:
+
+```
+use Cro::HTTP::Router::GraphQL;
+
+route {
+    get -> 'graphql' { graphiql}
+    post -> 'graphql' { graphql(GraphQL::Schema.new(...)) }
+}
+```
+
+You can mix/match with other routes you want your server to handle.
+
 ## More documentation
 
 See [eg/usersexample.md](/eg/usersexample.md) for a more complicated example.
