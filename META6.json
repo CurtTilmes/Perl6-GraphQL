@@ -21,7 +21,7 @@
         "GraphQL::Server" : "lib/GraphQL/Server.pm",
         "GraphQL::Types" : "lib/GraphQL/Types.pm",
         "GraphQL::Validation" : "lib/GraphQL/Validation.pm",
-        "Cro::HTTP::Router::GraphQL" : "lib/Cro/HTTP/Router/GraphQL.pm6",
+        "Cro::HTTP::Router::GraphQL" : "lib/Cro/HTTP/Router/GraphQL.pm6"
     },
 
     "depends" : [ "JSON::Fast", "Text::Wrap" ],
