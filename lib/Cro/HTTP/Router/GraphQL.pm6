@@ -7,9 +7,10 @@ sub graphiql() is export {
 }
 
 sub graphql(GraphQL::Schema $schema) is export {
-    request-body -> % (:$query, :$operationName = Str, :$variables)
+    request-body -> % (:$query, :$operationName, :$variables)
     {
         content 'application/json', $schema.execute($query,
-            :$operationName, variables => $variables // %()).to-json;
+            operationName => $operationName // Str,
+            variables => $variables // %()).to-json;
     }
 }
