@@ -40,5 +40,5 @@ multi sub MAIN(Str:D :$filename) is export
 
 multi sub MAIN(Int :$port = 3000) is export
 {
-    baile $port;
+    baile;
 }

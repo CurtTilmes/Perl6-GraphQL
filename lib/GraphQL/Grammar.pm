@@ -54,7 +54,7 @@ token Digit { <[0..9]> }
 token NonZeroDigit { <[1..9]>}
 
 token FloatValue
-{ 
+{
     <.IntegerPart> <.FractionalPart> |
     <.IntegerPart> <.ExponentPart>   |
     <.IntegerPart> <.FractionalPart> <.ExponentPart>

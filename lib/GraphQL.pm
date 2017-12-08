@@ -56,7 +56,7 @@ class GraphQL::Schema
     {
         my $schema = GraphQL::Schema.new;
         $schema.stash{%stash-vars.keys} = %stash-vars.values;
-        
+
         my $actions = GraphQL::Actions.new(:$schema);
 
         GraphQL::Grammar.parse($schemastring, :$actions, :rule('TypeSchema'))
@@ -400,7 +400,7 @@ class GraphQL::Schema
         GraphQL::Grammar.parse($query, :$actions,
                                rule => 'Document')
             or die "Failed to parse query";
-        
+
         my $document = $/.made;
 
         self.resolve-schema unless $!resolved-schema++;
@@ -421,7 +421,7 @@ class GraphQL::Schema
             {
                 die "Undefined field $field for $type"
                     unless %!types{$type}.field($field);
-                    
+
                 %!types{$type}.field($field).resolver = $resolver;
             }
         }

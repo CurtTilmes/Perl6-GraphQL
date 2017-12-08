@@ -63,7 +63,7 @@ sub ExecuteSelectionSet(:@selectionSet,
         my $fieldType = $objectType.field($fieldName).type
             or die qq{Cannot query field '$fieldName' } ~
                 qq{on type '$objectType.name()'.};
-            
+
         $responseValue = ExecuteField(:$objectType,
                                       :$objectValue,
                                       :@fields,
@@ -238,26 +238,27 @@ sub ReplaceVariable(:$value, :%variables)
     {
         when GraphQL::Variable
         {
-            return %variables{$value.name}:exists
+            %variables{$value.name}:exists
                 ?? %variables{$value.name}
                 !! Nil;
         }
         when Hash
         {
-            for $value.kv -> $k, $v
-            {
-                $value{$k} = ReplaceVariable(value => $v, :%variables);
-            }
+            Hash.new:
+                do for $value.kv -> $k, $v
+                {
+                    $k => ReplaceVariable(value => $v, :%variables)
+                }
         }
         when List
         {
-            for $value.kv -> $k, $v
-            {
-                $value[$k] = ReplaceVariable(value => $v, :%variables);
-            }
+            Array.new: $value.map({ ReplaceVariable(value => $_, :%variables) })
+        }
+        default
+        {
+            $value
         }
     }
-    return $value;
 }
 
 sub CoerceArgumentValues(GraphQL::Object :$objectType,

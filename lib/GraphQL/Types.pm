@@ -64,6 +64,7 @@ class GraphQL::Scalar is GraphQL::Type
 class GraphQL::String is GraphQL::Scalar
 {
     has Str $.name = 'String';
+    has $.class = Str;
 
     method coerce($value) { $value.Str }
 }
@@ -71,6 +72,7 @@ class GraphQL::String is GraphQL::Scalar
 class GraphQL::Int is GraphQL::Scalar
 {
     has Str $.name = 'Int';
+    has $.class = Int;
 
     method coerce($value) { $value.Int }
 }
@@ -78,6 +80,7 @@ class GraphQL::Int is GraphQL::Scalar
 class GraphQL::Float is GraphQL::Scalar
 {
     has Str $.name = 'Float';
+    has $.class = Num;
 
     method coerce($value) { $value.Num }
 }
@@ -85,6 +88,7 @@ class GraphQL::Float is GraphQL::Scalar
 class GraphQL::Boolean is GraphQL::Scalar
 {
     has Str $.name = 'Boolean';
+    has $.class = Bool;
 
     method coerce($value) { $value }
 
@@ -97,6 +101,7 @@ class GraphQL::Boolean is GraphQL::Scalar
 class GraphQL::ID is GraphQL::Scalar
 {
     has Str $.name = 'ID';
+    has $.class = Cool;
 
     method coerce($value) { $value }
 }
