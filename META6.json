@@ -24,7 +24,7 @@
         "Cro::HTTP::Router::GraphQL" : "lib/Cro/HTTP/Router/GraphQL.pm6"
     },
 
-    "depends" : [ "JSON::Fast", "Text::Wrap" ],
+    "depends" : [ "JSON::Fast", "Text::Wrap", "Bailador", "Cro::HTTP::Router" ],
 
     "description" : "Perl6 implementation of GraphQL",
 
