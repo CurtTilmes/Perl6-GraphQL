@@ -327,6 +327,16 @@ method UnionList($/)
     make $<Name>.map({ $!schema.type(.made) });
 }
 
+method Value:sym<ListValue>($/)
+{
+    make $<ListValue>.made
+}
+
+method ListValue($/)
+{
+    make $<Value>».made;
+}
+
 method Enum($/)
 {
     my $e = GraphQL::Enum.new(name => $<Name>.made,
