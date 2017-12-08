@@ -32,9 +32,9 @@ You can run this with a GraphQL query on the command line:
 ```
 $ perl6 hello.pl --help
 Usage:
-  hello.pl <query> 
-  hello.pl [--filename=<Str>] 
-  hello.pl [--port=<Int>] 
+  hello.pl <query>
+  hello.pl [--filename=<Str>]
+  hello.pl [--port=<Int>]
 
 $ perl6 hello.pl '{hello}'
 {
@@ -109,12 +109,32 @@ As an alternative to Bailador, you can use Cro::HTTP::Router::GraphQL
 to embed GraphQL into [Cro](http://mi.cro.services/) HTTP routes:
 
 ```
+use GraphQL;
 use Cro::HTTP::Router::GraphQL;
+use Cro::HTTP::Router;
+use Cro::HTTP::Server;
 
-route {
-    get -> 'graphql' { graphiql}
-    post -> 'graphql' { graphql(GraphQL::Schema.new(...)) }
+class Query
+{
+    method hello(--> Str) { 'Hello World' }
 }
+
+my $schema = GraphQL::Schema.new(Query);
+
+my Cro::Service $hello = Cro::HTTP::Server.new:
+    :host<localhost>, :port<10000>,
+    application => route
+    {
+        get -> { redirect '/graphql' }
+
+        get -> 'graphql' { graphiql }
+
+        post -> 'graphql' { graphql($schema) }
+    }
+
+$hello.start;
+
+react whenever signal(SIGINT) { $hello.stop; exit; }
 ```
 
 You can mix/match with other routes you want your server to handle.
