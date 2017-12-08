@@ -138,7 +138,9 @@ class GraphQL::List is GraphQL::Type
 
     method coerce($value)
     {
-        die "coercing a list!";
+        die 'Must be a list' unless $value ~~ Array;
+
+        Array[$!ofType.class].new($value.map({ $!ofType.coerce($_) }))
     }
 }
 
