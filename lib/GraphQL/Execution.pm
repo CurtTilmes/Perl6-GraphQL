@@ -139,12 +139,12 @@ sub CompleteValue(GraphQL::Type :$fieldType,
         {
             return $fieldType.valid($result) ?? $result !! Nil;
         }
-        
+
         when GraphQL::Scalar
         {
             return $result;
         }
-        
+
         when GraphQL::Non-Null
         {
             my $completedResult = CompleteValue(:fieldType($fieldType.ofType),
@@ -152,18 +152,18 @@ sub CompleteValue(GraphQL::Type :$fieldType,
                                                 :$result,
                                                 :%variables,
                                                 :$document);
-            
+
             die "Null in non-null type" unless $completedResult.defined;
-            
+
             return $completedResult;
         }
-        
+
         return unless $result.defined;
-        
+
         when GraphQL::List
         {
             die "Must return a List" unless $result ~~ List | Seq;
-            
+
             my $list = $result.map({ CompleteValue(
                                          :fieldType($fieldType.ofType),
                                          :@fields,
@@ -172,26 +172,25 @@ sub CompleteValue(GraphQL::Type :$fieldType,
                                          :$document) });
             return $list;
         }
-        
+
         when GraphQL::Object | GraphQL::Interface | GraphQL::Union
         {
             my $objectType = $fieldType ~~ GraphQL::Object
                 ?? $fieldType
                 !! ResolveAbstractType(:$fieldType, :$result);
-            
+
             my @subSelectionSet = MergeSelectionSets(:@fields);
-            
+
             my $objectValue = $result;
-            
+
             return ExecuteSelectionSet(:selectionSet(@subSelectionSet),
                                        :$objectType,
                                        :$objectValue,
                                        :%variables,
                                        :$document);
-            
         }
-        
-        default 
+
+        default
         {
             die "Complete Value Unknown Type";
         }
@@ -273,7 +272,7 @@ sub CoerceArgumentValues(GraphQL::Object :$objectType,
 
         $value = ReplaceVariable(:$value, :%variables);
 
-        $value //= $arg.defaultValue // die "Must provide $arg.name()";
+        $value //= $arg.defaultValue;
 
         %coercedValues{$arg.name} = $arg.type.coerce($value);
     }

@@ -143,7 +143,7 @@ class GraphQL::List is GraphQL::Type
 
     method coerce($value)
     {
-        die 'Must be a list' unless $value ~~ Array;
+        return Array[$!ofType.class] unless $value ~~ Array;
 
         Array[$!ofType.class].new($value.map({ $!ofType.coerce($_) }))
     }
@@ -306,7 +306,12 @@ class GraphQL::Input is GraphQL::Type
         ~ "\{\n" ~ @!inputFields.map({'  ' ~ .Str}).join("\n") ~ "\n}\n"
     }
 
-    method coerce(%value)
+    multi method coerce(Any:U)
+    {
+        $.class;
+    }
+
+    multi method coerce(%value)
     {
         my %c;
         for @!inputFields -> $f

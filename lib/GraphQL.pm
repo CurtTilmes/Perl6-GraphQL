@@ -572,7 +572,7 @@ This module currently supports three different I<styles> for
 expressing GraphQL types for your GraphQL schema:
 
 =item B<Manual> - You can construct each type by creating and nesting
-various C<GraphQL::*> objects.  
+various C<GraphQL::*> objects.
 
 For the "Hello World" example, it would look like this:
 
