@@ -105,7 +105,7 @@ execute GraphQL queries.
 
 ## Embedding in a Cro server
 
-As an alternative to Bailador, you can use Cro::HTTP::Router::GraphQL
+As an alternative to Bailador, you can use `Cro::HTTP::Router::GraphQL`
 to embed GraphQL into [Cro](http://mi.cro.services/) HTTP routes:
 
 ```
@@ -138,6 +138,23 @@ react whenever signal(SIGINT) { $hello.stop; exit; }
 ```
 
 You can mix/match with other routes you want your server to handle.
+
+There is also a `Cro::HTTP::Transform::GraphQL` you can easily delegate
+to from Cro routes:
+
+```
+route {
+    delegate graphql => Cro::HTTP::Transform::GraphQL.new(:$schema, :graphiql);
+}
+```
+
+Pass in your GraphQL schema, and optionall `:graphiql` to enable
+GraphiQL support on an http GET.
+
+`Cro::HTTP::Transform::GraphQL` is a `Cro::HTTP::Transform` that
+consumes `Cro::HTTP::Request`s and produces `Cro::HTTP::Response`s.
+It is still pretty basic.  A planned enhancement is caching parsed
+GraphQL query documents.  (Patches or advice welcome!)
 
 ## More documentation
 

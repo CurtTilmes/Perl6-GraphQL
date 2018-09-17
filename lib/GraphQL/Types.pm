@@ -66,7 +66,8 @@ class GraphQL::String is GraphQL::Scalar
     has Str $.name = 'String';
     has $.class = Str;
 
-    method coerce($value) { $value.Str }
+    multi method coerce(Any:U $value) { Str }
+    multi method coerce(Any:D $value) { ~$value }
 }
 
 class GraphQL::Int is GraphQL::Scalar

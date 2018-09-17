@@ -1,7 +1,7 @@
 {
     "name" : "GraphQL",
 
-    "version" : "0.5.7",
+    "version" : "0.5.8",
 
     "source-url" : "https://github.com/CurtTilmes/Perl6-GraphQL.git",
 
@@ -21,7 +21,8 @@
         "GraphQL::Server" : "lib/GraphQL/Server.pm",
         "GraphQL::Types" : "lib/GraphQL/Types.pm",
         "GraphQL::Validation" : "lib/GraphQL/Validation.pm",
-        "Cro::HTTP::Router::GraphQL" : "lib/Cro/HTTP/Router/GraphQL.pm6"
+        "Cro::HTTP::Router::GraphQL" : "lib/Cro/HTTP/Router/GraphQL.pm6",
+        "Cro::HTTP::Transform::GraphQL" : "lib/Cro/HTTP/Transform/GraphQL.pm6"
     },
 
     "depends" : [ "JSON::Fast", "Text::Wrap", "Bailador", "Cro::HTTP::Router" ],
