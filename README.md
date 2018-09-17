@@ -148,7 +148,7 @@ route {
 }
 ```
 
-Pass in your GraphQL schema, and optionall `:graphiql` to enable
+Pass in your GraphQL schema, and optional `:graphiql` to enable
 GraphiQL support on an http GET.
 
 `Cro::HTTP::Transform::GraphQL` is a `Cro::HTTP::Transform` that
