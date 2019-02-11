@@ -1,31 +1,28 @@
 {
     "name" : "GraphQL",
 
-    "version" : "0.5.8",
+    "version" : "0.6.0",
 
     "source-url" : "https://github.com/CurtTilmes/Perl6-GraphQL.git",
 
-    "perl" : "6.c",
+    "perl" : "6.*",
 
     "tags" : [ "GraphQL" ],
 
     "provides" : {
-        "GraphQL" : "lib/GraphQL.pm",
-        "GraphQL::Actions" : "lib/GraphQL/Actions.pm",
-        "GraphQL::Compare" : "lib/GraphQL/Compare.pm",
-        "GraphQL::Execution" : "lib/GraphQL/Execution.pm",
-        "GraphQL::Grammar" : "lib/GraphQL/Grammar.pm",
-        "GraphQL::GraphiQL" : "lib/GraphQL/GraphiQL.pm",
+        "GraphQL"                : "lib/GraphQL.pm",
+        "GraphQL::Actions"       : "lib/GraphQL/Actions.pm",
+        "GraphQL::Compare"       : "lib/GraphQL/Compare.pm",
+        "GraphQL::Execution"     : "lib/GraphQL/Execution.pm",
+        "GraphQL::Grammar"       : "lib/GraphQL/Grammar.pm",
+        "GraphQL::GraphiQL"      : "lib/GraphQL/GraphiQL.pm",
         "GraphQL::Introspection" : "lib/GraphQL/Introspection.pm",
-        "GraphQL::Response" : "lib/GraphQL/Response.pm",
-        "GraphQL::Server" : "lib/GraphQL/Server.pm",
-        "GraphQL::Types" : "lib/GraphQL/Types.pm",
-        "GraphQL::Validation" : "lib/GraphQL/Validation.pm",
-        "Cro::HTTP::Router::GraphQL" : "lib/Cro/HTTP/Router/GraphQL.pm6",
-        "Cro::HTTP::Transform::GraphQL" : "lib/Cro/HTTP/Transform/GraphQL.pm6"
+        "GraphQL::Response"      : "lib/GraphQL/Response.pm",
+        "GraphQL::Types"         : "lib/GraphQL/Types.pm",
+        "GraphQL::Validation"    : "lib/GraphQL/Validation.pm"
     },
 
-    "depends" : [ "JSON::Fast", "Text::Wrap", "Bailador", "Cro::HTTP::Router" ],
+    "depends" : [ "JSON::Fast", "Text::Wrap" ],
 
     "description" : "Perl6 implementation of GraphQL",
 
